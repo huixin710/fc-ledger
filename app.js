@@ -4,7 +4,7 @@
 
   var STORE_KEY = 'fcLedger.v1';
   var THEME_KEY = 'fcLedger.theme';
-  var VERSION = '2.7.1';
+  var VERSION = '2.7.2';
   var PALETTE = ['--c1','--c2','--c3','--c4','--c5','--c6','--c7','--c8','--c9'];
 
   /* ─────────────── 小工具 ─────────────── */
@@ -113,6 +113,15 @@
     '富邦MASTER 6848':       '富邦 momo 卡萬事達 6848',
     '富邦MASTER 0969':       '富邦 Costco 萬事達 0969'
   };
+  function migrateCardOrder() {
+    var START = 25;
+    db.cards.sort(function (a, b) {
+      var ca = (db.cardMeta[a] || {}).close || 31;
+      var cb = (db.cardMeta[b] || {}).close || 31;
+      return ((ca - START + 32) % 32) - ((cb - START + 32) % 32);
+    });
+  }
+
   function migrateCardNames() {
     var changed = false;
     db.cards = db.cards.map(function(c) {
@@ -1672,6 +1681,7 @@
   initTheme();
   load();
   migrateCardNames();
+  migrateCardOrder();
 
   var latest = db.records.map(function (r) { return r.date; }).filter(Boolean).sort().pop();
   if (latest && latest < ymOf(todayISO()) + '-01') { ui.ym = ymOf(latest); ui.year = latest.slice(0, 4); }

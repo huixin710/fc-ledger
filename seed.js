@@ -23,19 +23,19 @@ window.SEED = {
   "其他"
  ],
  "cards": [
+  "中信 All Me 萬事達 4511",
+  "中信 LINE Pay JCB 6357",
+  "國泰 CUBE Visa 3624",
+  "國泰蝦皮萬事達 2225",
+  "新光寰宇 Visa 2007",
   "台新 Richart JCB 3208",
   "台新 Richart Visa 0602",
   "台新 Richart 萬事達 6209",
-  "新光寰宇 Visa 2007",
-  "國泰 CUBE Visa 3624",
-  "國泰蝦皮萬事達 2225",
+  "富邦 momo 卡萬事達 6848",
+  "富邦 Costco 萬事達 0969",
   "聯邦 M 卡萬事達 0206",
   "聯邦幫賴點卡 Visa 9908",
-  "聯邦 LINE Bank Visa 1308",
-  "中信 All Me 萬事達 4511",
-  "中信 LINE Pay JCB 6357",
-  "富邦 momo 卡萬事達 6848",
-  "富邦 Costco 萬事達 0969"
+  "聯邦 LINE Bank Visa 1308"
  ],
  "cardMeta": {
   "台新 Richart JCB 3208": {

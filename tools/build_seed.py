@@ -25,12 +25,15 @@ CATEGORIES = [
 ]
 
 CARDS = [
-    '台新 Richart JCB 3208', '台新 Richart Visa 0602', '台新 Richart 萬事達 6209',
-    '新光寰宇 Visa 2007',
-    '國泰 CUBE Visa 3624', '國泰蝦皮萬事達 2225',
-    '聯邦 M 卡萬事達 0206', '聯邦幫賴點卡 Visa 9908', '聯邦 LINE Bank Visa 1308',
-    '中信 All Me 萬事達 4511', '中信 LINE Pay JCB 6357',
-    '富邦 momo 卡萬事達 6848', '富邦 Costco 萬事達 0969',
+    # 結帳日 25 → 27 → 2 → 7 → 8 → 15（從 25 號開始一個月循環）
+    '中信 All Me 萬事達 4511', '中信 LINE Pay JCB 6357',       # close=25
+    '國泰 CUBE Visa 3624', '國泰蝦皮萬事達 2225',              # close=27
+    '新光寰宇 Visa 2007',                                       # close=2
+    '台新 Richart JCB 3208', '台新 Richart Visa 0602',         # close=7
+    '台新 Richart 萬事達 6209',                                 # close=7
+    '富邦 momo 卡萬事達 6848', '富邦 Costco 萬事達 0969',      # close=8
+    '聯邦 M 卡萬事達 0206', '聯邦幫賴點卡 Visa 9908',         # close=15
+    '聯邦 LINE Bank Visa 1308',                                 # close=15
 ]
 
 R = []
