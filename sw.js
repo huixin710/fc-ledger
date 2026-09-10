@@ -1,11 +1,11 @@
 /* 離線快取：改版時把 CACHE 版本號 +1 即可強制更新 */
-var CACHE = 'fc-ledger-v13';
+var CACHE = 'fc-ledger-v14';
 var ASSETS = [
   './',
   './index.html',
-  './styles.css?v=2.6.2',
-  './seed.js?v=2.6.2',
-  './app.js?v=2.6.2',
+  './styles.css?v=2.7.0',
+  './seed.js?v=2.7.0',
+  './app.js?v=2.7.0',
   './manifest.webmanifest',
   './icons/icon.svg',
   './icons/icon-192.png',

@@ -4,7 +4,7 @@
 
   var STORE_KEY = 'fcLedger.v1';
   var THEME_KEY = 'fcLedger.theme';
-  var VERSION = '2.6.2';
+  var VERSION = '2.7.0';
   var PALETTE = ['--c1','--c2','--c3','--c4','--c5','--c6','--c7','--c8','--c9'];
 
   /* ─────────────── 小工具 ─────────────── */
@@ -849,7 +849,9 @@
         ? (t ? (est && est.exact ? money(t) : '~' + money(t)) : '待入帳')
         : money(t);
 
-      html += '<button class="rec" type="button" data-id="' + r.id + '">' +
+      html += '<div class="rec-wrap">' +
+        '<button class="rec-copy" type="button" data-copy="' + r.id + '" title="複製這筆">⊕</button>' +
+        '<button class="rec" type="button" data-id="' + r.id + '">' +
         '<span class="rec-chip" style="background:' + color(ci) + '">' + esc((r.category || '其他').slice(0, 3)) + '</span>' +
         '<span class="rec-body"><span class="rec-title">' + esc(r.item || '(未命名)') + '</span>' +
           '<span class="rec-meta">' + meta.join('<span>·</span>') + '</span></span>' +
@@ -857,7 +859,8 @@
           amtTxt + '</span><br>' +
           '<span class="rec-orig">' + (r.currency && r.currency !== 'TWD' ? esc(r.currency) + ' ' + money2(num(r.amount)) : '') +
           (est && !est.exact ? '<br>估算 @' + est.rate.toFixed(4) : '') +
-          (num(r.fee) ? '<br>費 ' + money2(num(r.fee)) : '') + '</span></span></button>';
+          (num(r.fee) ? '<br>費 ' + money2(num(r.fee)) : '') + '</span></span></button>' +
+        '</div>';
     });
     $('#records').innerHTML = html;
   }
@@ -1282,6 +1285,29 @@
     $('#sheet').hidden = false;
     document.body.style.overflow = 'hidden';
   }
+  function copyRec(id) {
+    var r = db.records.filter(function (x) { return x.id === id; })[0];
+    if (!r) return;
+    ui.editingId = null;
+    var f = $('#form'); f.reset();
+    $('#sheetTitle').textContent = '複製新增';
+    ['item', 'currency', 'amount', 'fee', 'artist', 'memberId', 'note'].forEach(function (k) {
+      fe(k).value = r[k] == null ? '' : r[k];
+    });
+    fe('date').value = todayISO();
+    fe('postDate').value = '';
+    fe('twd').value = '';
+    fe('nextDue').value = '';
+    if (r.category && db.categories.indexOf(r.category) === -1) { db.categories.push(r.category); refreshOptions(); }
+    if (r.card && db.cards.indexOf(r.card) === -1) { db.cards.push(r.card); refreshOptions(); }
+    fe('category').value = r.category || db.categories[0];
+    fe('card').value = r.card || db.cards[0];
+    $('#deleteRec').hidden = true;
+    updateRocHints(); updateRate();
+    $('#sheet').hidden = false;
+    document.body.style.overflow = 'hidden';
+  }
+
   function closeSheet() {
     $('#sheet').hidden = true;
     document.body.style.overflow = '';
@@ -1421,6 +1447,8 @@
     };
     ['#records', '#pendAmount', '#pendDate'].forEach(function (sel) {
       $(sel).addEventListener('click', function (e) {
+        var cp = e.target.closest('.rec-copy');
+        if (cp) { e.stopPropagation(); copyRec(cp.dataset.copy); return; }
         var b = e.target.closest('.rec');
         if (b) openSheet(b.dataset.id);
       });

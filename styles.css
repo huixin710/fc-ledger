@@ -180,9 +180,12 @@ td.num{font-variant-numeric:tabular-nums}
 /* ── filters ──────────────────────────────────────── */
 .filters{margin-bottom:10px}
 .filters input[type=search]{
-  width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:10px;
+  width:100%;padding:10px 12px 10px 38px;border:1.5px solid var(--line);border-radius:10px;
   background:var(--surface);margin-bottom:8px;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23999' stroke-width='2'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cline x1='21' y1='21' x2='16.65' y2='16.65'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:12px center;
 }
+.filters input[type=search]:focus{border-color:var(--accent);outline:none;}
 .filter-row{display:flex;gap:6px;flex-wrap:wrap}
 .filter-row select{
   flex:1 1 calc(50% - 3px);min-width:0;padding:8px 6px;border:1px solid var(--line);
@@ -193,6 +196,15 @@ td.num{font-variant-numeric:tabular-nums}
 .list-total b{color:var(--text);font-size:15px}
 
 /* ── record rows ──────────────────────────────────── */
+.rec-wrap{display:flex;align-items:stretch;gap:6px;margin-bottom:7px;}
+.rec-wrap .rec{flex:1;margin-bottom:0;}
+.rec-copy{
+  flex:0 0 32px;border-radius:10px;border:1px solid var(--line);background:var(--surface);
+  color:var(--muted);font-size:18px;line-height:1;cursor:pointer;
+  display:grid;place-items:center;transition:all .15s;box-shadow:var(--shadow);
+}
+.rec-copy:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-soft);}
+
 .month-sep{
   font-size:12px;font-weight:800;color:var(--muted);letter-spacing:.05em;
   padding:14px 2px 6px;display:flex;justify-content:space-between;
