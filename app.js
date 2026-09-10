@@ -88,6 +88,7 @@
         db.cards = (d.cards && d.cards.length) ? d.cards : window.SEED.cards.slice();
         db.installments = Array.isArray(d.installments) ? d.installments : clone(window.SEED.installments);
         db.budget = d.budget || defaultBudget();
+        if (!db.budget.excludeCats) db.budget.excludeCats = [];
         return;
       } catch (e) {}
     }
@@ -138,6 +139,9 @@
   }
   function disposable() {
     return num(db.budget.income) - fixedTotal() - installMonthly() - num(db.budget.savings);
+  }
+  function isExcluded(cat) {
+    return (db.budget.excludeCats || []).indexOf(cat) > -1;
   }
 
   /* ─────────────── 圖表 ─────────────── */
@@ -270,7 +274,11 @@
     var b = db.budget;
     var ym = ui.mode === 'month' ? ui.ym : ymOf(todayISO());
     var monthRecs = db.records.filter(function (r) { return ymOf(r.date) === ym; });
-    var spent = monthRecs.reduce(function (a, r) { return a + total(r); }, 0);
+    // 年繳保費之類已在固定支出預留過的分類，不重複算進「已花」
+    var counted = monthRecs.filter(function (r) { return !isExcluded(r.category); });
+    var excluded = monthRecs.filter(function (r) { return isExcluded(r.category); });
+    var spent = counted.reduce(function (a, r) { return a + total(r); }, 0);
+    var exSum = excluded.reduce(function (a, r) { return a + total(r); }, 0);
     var cap = disposable();
     var left = cap - spent;
     var pct = cap > 0 ? Math.min(100, (spent / cap) * 100) : 100;
@@ -292,7 +300,9 @@
       '</div>' +
       '<div class="bh-bar"><i style="width:' + pct.toFixed(1) + '%"></i></div>' +
       '<div class="bh-foot"><span>已用 ' + (cap > 0 ? Math.round((spent / cap) * 100) : 0) + '%</span>' +
-        '<span>' + money(spent) + ' / ' + money(cap) + '</span></div>';
+        '<span>' + money(spent) + ' / ' + money(cap) + '</span></div>' +
+      (exSum ? '<div class="bh-note">另有 ' + money(exSum) + ' 的 ' + (b.excludeCats || []).join('、') +
+        '，已在固定支出預留，不重複計入</div>' : '');
 
     var im = installMonthly();
     var html = '<div class="brk plus"><span class="brk-n">月收入（稅後）</span><span class="brk-v">+ ' + money(num(b.income)) + '</span></div>';
@@ -345,16 +355,20 @@
     if (!rows.length) { $('#catBudget').innerHTML = '<p class="empty">這個月還沒有紀錄</p>'; return; }
     var sum = rows.reduce(function (a, r) { return a + r.value; }, 0);
     var max = Math.max.apply(null, rows.map(function (r) { return Math.abs(r.value); })) || 1;
+    var counted = rows.filter(function (r) { return !isExcluded(r.name); })
+      .reduce(function (a, r) { return a + r.value; }, 0);
     $('#catBudget').innerHTML = rows.map(function (r, i) {
       var share = sum > 0 ? (r.value / sum) * 100 : 0;
-      return '<div class="bar-row">' +
-        '<span class="bar-name" title="' + esc(r.name) + '">' + esc(r.name) + '</span>' +
+      var ex = isExcluded(r.name);
+      return '<div class="bar-row"' + (ex ? ' style="opacity:.55"' : '') + '>' +
+        '<span class="bar-name" title="' + esc(r.name) + '">' + esc(r.name) + (ex ? ' *' : '') + '</span>' +
         '<span class="bar-track"><span class="bar-fill" style="width:' + Math.max(2, (Math.abs(r.value) / max) * 100).toFixed(1) +
         '%;background:' + color(i) + '"></span></span>' +
         '<span class="bar-val">' + money(r.value) + '<br><span class="lg-val">' + share.toFixed(0) + '%</span></span></div>';
     }).join('') +
       (cap > 0 ? '<p class="hint" style="margin:10px 0 0">可自由支配額度 NT$ ' + money(cap) +
-        '，本月已用 NT$ ' + money(sum) + '。</p>' : '');
+        '，本月計入預算的花費 NT$ ' + money(counted) +
+        (counted !== sum ? '（* 的分類已在固定支出預留，不計入）' : '') + '。</p>' : '');
   }
 
   function subscriptionGroups() {
@@ -699,7 +713,7 @@
     var b = db.budget;
     $('#bIncome').value = b.income || '';
     $('#bSavings').value = b.savings || '';
-    drawFixed(); drawInstall();
+    drawFixed(); drawInstall(); drawExclude();
     $('#bSheet').hidden = false;
     document.body.style.overflow = 'hidden';
   }
@@ -719,6 +733,21 @@
       btn.onclick = function () { db.budget.fixed.splice(Number(btn.dataset.del), 1); drawFixed(); };
     });
   }
+  function drawExclude() {
+    $('#bExclude').innerHTML = db.categories.map(function (c) {
+      return '<label class="tag" style="padding-left:8px;cursor:pointer">' +
+        '<input type="checkbox" data-cat="' + esc(c) + '"' + (isExcluded(c) ? ' checked' : '') + '> ' + esc(c) + '</label>';
+    }).join('');
+    $$('#bExclude input').forEach(function (cb) {
+      cb.onchange = function () {
+        var list = db.budget.excludeCats || (db.budget.excludeCats = []);
+        var i = list.indexOf(cb.dataset.cat);
+        if (cb.checked && i === -1) list.push(cb.dataset.cat);
+        if (!cb.checked && i > -1) list.splice(i, 1);
+      };
+    });
+  }
+
   function drawInstall() {
     $('#bInstall').innerHTML = db.installments.map(function (it, i) {
       return '<div class="row-edit"><input type="text" data-k="name" data-i="' + i + '" value="' + esc(it.name) + '">' +

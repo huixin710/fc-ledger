@@ -1,5 +1,5 @@
 /* 由 tools/build_seed.py 產生，請勿手改。
-   來源：FC.xlsx + 115/09 台新／寰宇／國泰CUBE／聯邦 信用卡帳單 */
+   來源：FC.xlsx + 115/09 台新／寰宇／國泰CUBE／聯邦、115/03 與 115/09 富邦 信用卡帳單 */
 window.SEED = {
  "categories": [
   "FC月費",
@@ -32,7 +32,9 @@ window.SEED = {
   "聯邦賴點卡 9908",
   "LINE Bank 1308",
   "4511 卡",
-  "6357 卡"
+  "6357 卡",
+  "富邦MASTER 6848",
+  "富邦MASTER 0969"
  ],
  "records": [
   {
@@ -1504,6 +1506,156 @@ window.SEED = {
    "nextDue": "",
    "category": "餐飲",
    "artist": ""
+  },
+  {
+   "date": "2026-02-13",
+   "postDate": "2026-02-23",
+   "item": "富邦momo-EC",
+   "twd": 835,
+   "currency": "",
+   "amount": 0,
+   "fee": 0,
+   "card": "富邦MASTER 6848",
+   "note": "",
+   "memberId": "",
+   "nextDue": "",
+   "category": "生活用品",
+   "artist": ""
+  },
+  {
+   "date": "2026-02-16",
+   "postDate": "2026-02-23",
+   "item": "富邦momo-EC",
+   "twd": 1270,
+   "currency": "",
+   "amount": 0,
+   "fee": 0,
+   "card": "富邦MASTER 6848",
+   "note": "",
+   "memberId": "",
+   "nextDue": "",
+   "category": "生活用品",
+   "artist": ""
+  },
+  {
+   "date": "2026-02-22",
+   "postDate": "2026-02-24",
+   "item": "富邦momo-EC",
+   "twd": 764,
+   "currency": "",
+   "amount": 0,
+   "fee": 0,
+   "card": "富邦MASTER 6848",
+   "note": "",
+   "memberId": "",
+   "nextDue": "",
+   "category": "生活用品",
+   "artist": ""
+  },
+  {
+   "date": "2026-02-23",
+   "postDate": "2026-02-26",
+   "item": "台灣人壽續期保費",
+   "twd": 17297,
+   "currency": "",
+   "amount": 0,
+   "fee": 0,
+   "card": "富邦MASTER 6848",
+   "note": "年繳保費",
+   "memberId": "",
+   "nextDue": "",
+   "category": "稅費保險",
+   "artist": ""
+  },
+  {
+   "date": "2026-02-25",
+   "postDate": "2026-03-03",
+   "item": "全球人壽８８０００４６０６００",
+   "twd": 14602,
+   "currency": "",
+   "amount": 0,
+   "fee": 0,
+   "card": "富邦MASTER 6848",
+   "note": "年繳保費",
+   "memberId": "",
+   "nextDue": "",
+   "category": "稅費保險",
+   "artist": ""
+  },
+  {
+   "date": "2026-02-25",
+   "postDate": "2026-03-02",
+   "item": "富邦momo-EC",
+   "twd": 815,
+   "currency": "",
+   "amount": 0,
+   "fee": 0,
+   "card": "富邦MASTER 6848",
+   "note": "",
+   "memberId": "",
+   "nextDue": "",
+   "category": "生活用品",
+   "artist": ""
+  },
+  {
+   "date": "2026-02-26",
+   "postDate": "2026-03-02",
+   "item": "富邦momo-EC",
+   "twd": 797,
+   "currency": "",
+   "amount": 0,
+   "fee": 0,
+   "card": "富邦MASTER 6848",
+   "note": "",
+   "memberId": "",
+   "nextDue": "",
+   "category": "生活用品",
+   "artist": ""
+  },
+  {
+   "date": "2026-08-06",
+   "postDate": "2026-08-10",
+   "item": "富邦momo-EC",
+   "twd": 744,
+   "currency": "",
+   "amount": 0,
+   "fee": 0,
+   "card": "富邦MASTER 6848",
+   "note": "",
+   "memberId": "",
+   "nextDue": "",
+   "category": "生活用品",
+   "artist": ""
+  },
+  {
+   "date": "2026-08-21",
+   "postDate": "2026-08-24",
+   "item": "富邦momo-EC",
+   "twd": 1930,
+   "currency": "",
+   "amount": 0,
+   "fee": 0,
+   "card": "富邦MASTER 6848",
+   "note": "",
+   "memberId": "",
+   "nextDue": "",
+   "category": "生活用品",
+   "artist": ""
+  },
+  {
+   "date": "2026-09-05",
+   "postDate": "2026-09-07",
+   "item": "好市多北台中店",
+   "twd": 99,
+   "currency": "",
+   "amount": 0,
+   "fee": 0,
+   "card": "富邦MASTER 0969",
+   "note": "",
+   "memberId": "",
+   "nextDue": "",
+   "category": "生活用品",
+   "artist": ""
   }
  ],
  "installments": [
@@ -1578,6 +1730,15 @@ window.SEED = {
    "interest": 7,
    "remaining": 4361,
    "apr": 1.88
+  },
+  {
+   "name": "富邦人壽（保費分期）",
+   "card": "富邦MASTER 6848",
+   "total": 13145,
+   "monthly": 1095,
+   "interest": 0,
+   "remaining": 5475,
+   "apr": 0.0
   }
  ],
  "budget": {
@@ -1591,7 +1752,18 @@ window.SEED = {
    {
     "name": "其他固定支出",
     "amount": 5000
+   },
+   {
+    "name": "電信費（遠傳兩門號）",
+    "amount": 1297
+   },
+   {
+    "name": "保險預留（台壽＋全球 年 31,899）",
+    "amount": 2658
    }
+  ],
+  "excludeCats": [
+   "稅費保險"
   ]
  }
 };

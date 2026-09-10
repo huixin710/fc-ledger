@@ -28,6 +28,7 @@ CARDS = [
     '台新Richart 3208', '台新Richart 0602', '寰宇卡 2007',
     '國泰CUBE 3624', '國泰CUBE 2225', '聯邦M悠遊鈦 0206',
     '聯邦賴點卡 9908', 'LINE Bank 1308', '4511 卡', '6357 卡',
+    '富邦MASTER 6848', '富邦MASTER 0969',
 ]
 
 R = []
@@ -188,8 +189,26 @@ add('115/8/6',  '115/8/8',  '連支＊厭世夯肉', 208, FED_LINE, '餐飲')
 add('115/8/4',  '115/8/10', '連加＊Ｓｉｓ・Ｔｉｎｇ', 1200, FED_LINE, '餐飲')
 
 # ─────────────────────────────────────────────────────────────
-# G. 分期（台新 115/09 帳單「分期交易尚未到期資訊」）— 不當成當月消費，
-#    而是每月固定要繳的錢，單獨追蹤。
+# G. 富邦（MASTER鈦金 6848 / 0969）— 115/03 與 115/09 兩期帳單
+#    保費全部年繳且集中在 2 月，是現金流最大的坑
+# ─────────────────────────────────────────────────────────────
+FB, FB2 = '富邦MASTER 6848', '富邦MASTER 0969'
+add('115/2/13', '115/2/23', '富邦momo-EC', 835, FB, '生活用品')
+add('115/2/16', '115/2/23', '富邦momo-EC', 1270, FB, '生活用品')
+add('115/2/22', '115/2/24', '富邦momo-EC', 764, FB, '生活用品')
+add('115/2/23', '115/2/26', '台灣人壽續期保費', 17297, FB, '稅費保險', note='年繳保費')
+add('115/2/25', '115/3/3',  '全球人壽８８０００４６０６００', 14602, FB, '稅費保險', note='年繳保費')
+add('115/2/25', '115/3/2',  '富邦momo-EC', 815, FB, '生活用品')
+add('115/2/26', '115/3/2',  '富邦momo-EC', 797, FB, '生活用品')
+add('115/8/6',  '115/8/10', '富邦momo-EC', 744, FB, '生活用品')
+add('115/8/21', '115/8/24', '富邦momo-EC', 1930, FB, '生活用品')
+add('115/9/5',  '115/9/7',  '好市多北台中店', 99, FB2, '生活用品')
+
+# ─────────────────────────────────────────────────────────────
+# H. 分期 — 不當成當月消費，而是每月固定要繳的錢，單獨追蹤。
+#    台新來自 115/09 帳單「分期交易尚未到期資訊」；
+#    富邦人壽 13,145 分 12 期 0%，115/09 為 07/12 期，未到期 5,475。
+#    （富邦 11503 帳單分期已於 115/08 繳完 06/06 期，故不列入）
 # ─────────────────────────────────────────────────────────────
 INSTALLMENTS = [
     dict(name='26/05 帳單分期',        card=T32, total=20000, monthly=3346, interest=52, remaining=6718,  apr=4.77),
@@ -200,12 +219,22 @@ INSTALLMENTS = [
     dict(name='拓元票務服務',          card=TS,  total=9580,  monthly=795,  interest=11, remaining=7204,  apr=1.88),
     dict(name='遠傳－Ticket Plus',     card=TS,  total=3200,  monthly=265,  interest=4,  remaining=2407,  apr=1.88),
     dict(name='藍新－KKTIX售票報名平', card=TS,  total=5800,  monthly=481,  interest=7,  remaining=4361,  apr=1.88),
+    dict(name='富邦人壽（保費分期）',  card=FB,  total=13145, monthly=1095, interest=0,  remaining=5475,  apr=0.00),
 ]
 
+# 年繳、但每個月都該預留的錢
+LIFE = 17297 + 14602            # 台灣人壽 + 全球人壽，都在 2 月一次付清
 BUDGET = dict(
     income=35000,
     savings=0,
-    fixed=[dict(name='皮膚科', amount=2000), dict(name='其他固定支出', amount=5000)],
+    fixed=[
+        dict(name='皮膚科', amount=2000),
+        dict(name='其他固定支出', amount=5000),
+        dict(name='電信費（遠傳兩門號）', amount=1297),
+        dict(name='保險預留（台壽＋全球 年 %s）' % format(LIFE, ','), amount=round(LIFE / 12)),
+    ],
+    # 這些分類是「已經用固定支出預留過」或年度一次性的，不重複算進每月已花
+    excludeCats=['稅費保險'],
 )
 
 # ─────────────────────────────────────────────────────────────
@@ -227,11 +256,21 @@ for c in sorted(by_card, key=lambda k: -s(by_card[k])):
     print('  %-20s %8s  %3d 筆' % (c, format(round(s(by_card[c])), ','), len(by_card[c])))
 print('  %-20s %8s' % ('總計', format(round(s(R)), ',')))
 
-aug = [r for r in R if r['date'][:7] == '2026-08']
-print('\n8 月消費（消費日計）：%s（%d 筆）' % (format(round(s(aug)), ','), len(aug)))
+print('\n每月消費（消費日計）：')
+for ym in sorted(set(r['date'][:7] for r in R)):
+    rows = [r for r in R if r['date'][:7] == ym]
+    ins = [r for r in rows if r['category'] == '稅費保險']
+    print('  %s  %8s  %3d 筆%s' % (ym, format(round(s(rows)), ','), len(rows),
+                                   '（含年繳保費 %s）' % format(round(s(ins)), ',') if ins else ''))
+
+fixed_sum = sum(f['amount'] for f in BUDGET['fixed'])
+inst_sum = sum(i['monthly'] + i['interest'] for i in INSTALLMENTS)
+print('\n預算：%s − 固定 %s − 分期 %s = 可自由支配 %s' % (
+    format(BUDGET['income'], ','), format(fixed_sum, ','), format(inst_sum, ','),
+    format(BUDGET['income'] - fixed_sum - inst_sum, ',')))
 
 out = ('/* 由 tools/build_seed.py 產生，請勿手改。\n'
-       '   來源：FC.xlsx + 115/09 台新／寰宇／國泰CUBE／聯邦 信用卡帳單 */\n'
+       '   來源：FC.xlsx + 115/09 台新／寰宇／國泰CUBE／聯邦、115/03 與 115/09 富邦 信用卡帳單 */\n'
        'window.SEED = ' +
        json.dumps(dict(categories=CATEGORIES, cards=CARDS, records=R,
                        installments=INSTALLMENTS, budget=BUDGET),
