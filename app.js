@@ -4,7 +4,7 @@
 
   var STORE_KEY = 'fcLedger.v1';
   var THEME_KEY = 'fcLedger.theme';
-  var VERSION = '2.7.4';
+  var VERSION = '2.7.5';
   var PALETTE = ['--c1','--c2','--c3','--c4','--c5','--c6','--c7','--c8','--c9'];
 
   /* ─────────────── 小工具 ─────────────── */
@@ -892,6 +892,28 @@
   }
 
   /* ─────────────── 貼上帳單 ─────────────── */
+  var AUTO_CAT_RULES = [
+    { re: /折抵|回饋|紅利兌換|點數兌換/,                                  cat: '回饋折抵' },
+    { re: /fanclub|fan.?club|weverse|ktown4u|yes24|universe\s*music|拍拍圈/i, cat: 'FC月費' },
+    { re: /高鐵|台鐵|臺鐵|鐵路.*購票|捷運|公車|公路客運|計程|uber|taxi|中油|台塑|全國.*油|速邁樂|油品|加油|航空|機票|scoot|jetstar|airasia|tigerair|停車|ez.?way|easycard/i, cat: '交通' },
+    { re: /中華電|台灣大哥大|遠傳|台灣之星|亞太電|數位通|輕鬆繳.*電|電信/i, cat: '電信網路' },
+    { re: /netflix|spotify|youtube\s*premium|disney|hbo|prime\s*video|line\s*tv|adobe|icloud|google.*one|microsoft|xbox/i, cat: '訂閱服務' },
+    { re: /costco|好市多|家樂福|大潤發|全聯|頂好|pxmart|愛買|大買家|超市|生鮮|藥局|康是美|屈臣氏|寶雅|松本清|大創/i, cat: '生活用品' },
+    { re: /醫院|診所|藥局|健保|看診|掛號|牙科|眼科|皮膚科|聯合醫院|馬偕|台大醫|長庚|奇美醫/i, cat: '醫療保健' },
+    { re: /健身|gym|fittime|世界健身|全方位|yoga|pilates|運動/i, cat: '運動健身' },
+    { re: /保險|車險|壽險|產險|火險|意外險|第六預算|勞保|健保費|國民年金/i, cat: '稅費保險' },
+    { re: /hotel|hostel|民宿|旅館|飯店|booking|agoda|airbnb|住宿|resort/i, cat: '旅遊住宿' },
+    { re: /momo|蝦皮|shopee|pchome|博客來|amazon|yahoo.*購物|百貨|sogo|微風|新光三越|誠品|台北101|citysuper/i, cat: '百貨購物' },
+    { re: /uniqlo|zara|h&m|nike|adidas|gu\b|lv\b|gucci|美妝|化妝|保養|lush|sephora/i, cat: '服飾美妝' },
+    { re: /餐|食堂|廚房|鍋|燒肉|壽司|拉麵|火鍋|牛排|炸雞|pizza|burger|mcdonald|mos\s*burger|肯德基|星巴克|starbucks|café|coffee|茶|飲料|珍奶|全家|7-eleven|seven|711|便利商店/i, cat: '餐飲' },
+  ];
+  function guessCategory(item, fallback) {
+    var s = toHalf(item).toLowerCase();
+    for (var i = 0; i < AUTO_CAT_RULES.length; i++) {
+      if (AUTO_CAT_RULES[i].re.test(s)) return AUTO_CAT_RULES[i].cat;
+    }
+    return fallback || '其他';
+  }
   var SKIP_RE = /繳款|轉帳|已收到|自動轉帳|網銀行動繳|本期應繳|上期|小計|總計|本期消費|應繳總額|信用額度|循環|帳單分期\s*\d+\/\d+期(本金|利息)|期本金|期利息/;
   var FEE_RE = /手續費|服務費|結匯/;
 
@@ -939,8 +961,11 @@
 
       var d1 = toISO(m[1], rocYear), d2 = m[2] ? toISO(m[2], rocYear) : '';
       if (union && d2) { var t = d1; d1 = d2; d2 = t; }
+      var cat = (!opts.category || opts.category === '其他')
+        ? guessCategory(desc, opts.category || '其他')
+        : opts.category;
       out.push({ id: uid(), date: d1, postDate: d2, item: desc, twd: amount, fee: 0,
-                 currency: '', amount: 0, card: opts.card, category: opts.category,
+                 currency: '', amount: 0, card: opts.card, category: cat,
                  note: '', memberId: '', nextDue: '', artist: '' });
     });
     return { rows: out, skipped: skipped };
@@ -989,10 +1014,11 @@
     $('#pasteResult').innerHTML =
       '<p class="hint" style="margin:10px 0 6px">解析出 <b>' + res.rows.length + '</b> 筆，合計 <b>NT$ ' + money(sum) +
       '</b>（略過 ' + res.skipped + ' 行）。確認沒問題再按「加入這些紀錄」，加入後可以逐筆改分類。</p>' +
-      '<div class="tbl-scroll"><table><thead><tr><th>消費日</th><th>入帳</th><th>項目</th><th>金額</th></tr></thead><tbody>' +
+      '<div class="tbl-scroll"><table><thead><tr><th>消費日</th><th>入帳</th><th>項目</th><th>分類</th><th>金額</th></tr></thead><tbody>' +
       res.rows.map(function (r) {
         return '<tr><td>' + (toROC(r.date) || '<span style="color:var(--danger)">?</span>') + '</td>' +
           '<td>' + toROC(r.postDate) + '</td><td>' + esc(r.item) + '</td>' +
+          '<td><span class="pill">' + esc(r.category) + '</span></td>' +
           '<td class="num">' + money(r.twd + r.fee) + '</td></tr>';
       }).join('') + '</tbody></table></div>';
   }
