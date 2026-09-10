@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>FC 記帳本</title>
+<meta name="description" content="粉絲俱樂部／周邊消費記帳本">
+<meta name="theme-color" content="#7c4dff">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="FC 記帳本">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-main">
+    <h1 class="brand">FC 記帳本</h1>
+    <button id="themeBtn" class="icon-btn" type="button" aria-label="切換深淺色">🌓</button>
+  </div>
+  <nav class="period" id="periodBar">
+    <button class="per-nav" id="prevPeriod" type="button" aria-label="上一期">‹</button>
+    <button class="per-label" id="periodLabel" type="button">載入中…</button>
+    <button class="per-nav" id="nextPeriod" type="button" aria-label="下一期">›</button>
+  </nav>
+</header>
+
+<main id="main">
+
+  <!-- ───────── 總覽 ───────── -->
+  <section class="view" id="view-dash">
+    <div class="stat-grid">
+      <div class="stat stat-hero">
+        <span class="stat-k">本期總支出</span>
+        <span class="stat-v" id="sumTotal">—</span>
+        <span class="stat-sub" id="sumSub">—</span>
+      </div>
+      <div class="stat">
+        <span class="stat-k">筆數</span>
+        <span class="stat-v sm" id="sumCount">—</span>
+      </div>
+      <div class="stat">
+        <span class="stat-k">手續費</span>
+        <span class="stat-v sm" id="sumFee">—</span>
+      </div>
+      <div class="stat">
+        <span class="stat-k">平均單筆</span>
+        <span class="stat-v sm" id="sumAvg">—</span>
+      </div>
+      <div class="stat">
+        <span class="stat-k">最大單筆</span>
+        <span class="stat-v sm" id="sumMax">—</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2 class="card-h">每月支出</h2>
+      <div id="chartMonth" class="chart-wrap"></div>
+    </div>
+
+    <div class="card">
+      <h2 class="card-h">分類佔比</h2>
+      <div class="donut-row">
+        <div id="chartCat" class="donut-wrap"></div>
+        <ul id="legendCat" class="legend"></ul>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2 class="card-h">依藝人 / 團體</h2>
+      <div id="chartArtist" class="chart-wrap"></div>
+    </div>
+
+    <div class="card">
+      <h2 class="card-h">依信用卡</h2>
+      <div id="chartCard" class="chart-wrap"></div>
+    </div>
+
+    <div class="card">
+      <h2 class="card-h">依幣別</h2>
+      <div id="tblCurrency"></div>
+    </div>
+  </section>
+
+  <!-- ───────── 明細 ───────── -->
+  <section class="view" id="view-list" hidden>
+    <div class="filters">
+      <input type="search" id="q" placeholder="搜尋項目、備註、卡號…" autocomplete="off">
+      <div class="filter-row">
+        <select id="fCategory"><option value="">全部分類</option></select>
+        <select id="fCard"><option value="">全部卡別</option></select>
+        <select id="fCurrency"><option value="">全部幣別</option></select>
+        <select id="fArtist"><option value="">全部藝人</option></select>
+        <select id="sortBy">
+          <option value="date-desc">消費日 ↓</option>
+          <option value="date-asc">消費日 ↑</option>
+          <option value="twd-desc">金額 ↓</option>
+          <option value="twd-asc">金額 ↑</option>
+        </select>
+      </div>
+      <label class="chk"><input type="checkbox" id="allPeriods"> 顯示所有期間（忽略上方月份）</label>
+    </div>
+    <div class="list-total" id="listTotal"></div>
+    <div id="records"></div>
+  </section>
+
+  <!-- ───────── 訂閱 / 提醒 ───────── -->
+  <section class="view" id="view-sub" hidden>
+    <div class="card">
+      <h2 class="card-h">即將到期 / 續訂</h2>
+      <div id="dueList"></div>
+    </div>
+    <div class="card">
+      <h2 class="card-h">固定支出一覽</h2>
+      <p class="hint">依「項目 + 會員卡號」歸戶，估算年度花費。</p>
+      <div id="subList"></div>
+    </div>
+  </section>
+
+  <!-- ───────── 設定 ───────── -->
+  <section class="view" id="view-settings" hidden>
+    <div class="card">
+      <h2 class="card-h">資料備份</h2>
+      <p class="hint">資料只存在這台裝置的瀏覽器裡（不會上傳）。換手機或清除瀏覽器資料前請先匯出。</p>
+      <div class="btn-row">
+        <button class="btn" id="exportJson" type="button">匯出 JSON 備份</button>
+        <button class="btn" id="exportCsv" type="button">匯出 CSV（Excel）</button>
+      </div>
+      <div class="btn-row">
+        <label class="btn btn-ghost" for="importFile">匯入 JSON / CSV</label>
+        <input type="file" id="importFile" accept=".json,.csv,text/csv,application/json" hidden>
+      </div>
+      <p class="hint" id="importMsg"></p>
+    </div>
+
+    <div class="card">
+      <h2 class="card-h">分類</h2>
+      <div id="catEditor" class="tag-editor"></div>
+      <div class="inline-add">
+        <input type="text" id="newCat" placeholder="新增分類…">
+        <button class="btn btn-sm" id="addCat" type="button">加入</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2 class="card-h">信用卡</h2>
+      <div id="cardEditor" class="tag-editor"></div>
+      <div class="inline-add">
+        <input type="text" id="newCard" placeholder="新增卡別…">
+        <button class="btn btn-sm" id="addCard" type="button">加入</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2 class="card-h">危險操作</h2>
+      <div class="btn-row">
+        <button class="btn btn-ghost" id="reseed" type="button">重新載入 Excel 初始資料</button>
+        <button class="btn btn-danger" id="wipe" type="button">清空所有資料</button>
+      </div>
+    </div>
+
+    <p class="version">FC 記帳本 · 離線可用 · <span id="verLabel"></span></p>
+  </section>
+</main>
+
+<!-- ───────── 編輯表單（全螢幕） ───────── -->
+<div class="sheet" id="sheet" hidden>
+  <div class="sheet-inner">
+    <div class="sheet-head">
+      <button class="btn-text" id="sheetCancel" type="button">取消</button>
+      <strong id="sheetTitle">新增一筆</strong>
+      <button class="btn-text primary" id="sheetSave" type="button">儲存</button>
+    </div>
+    <form id="form" class="form" autocomplete="off">
+      <label class="fld">
+        <span>項目 <b>*</b></span>
+        <input type="text" name="itemName" list="itemList" required placeholder="例：TAKASE TOYA OFFICIAL FANCLUB 月額費">
+        <datalist id="itemList"></datalist>
+      </label>
+
+      <div class="fld-2">
+        <label class="fld">
+          <span>消費日 <b>*</b></span>
+          <input type="date" name="date" required>
+          <em class="roc" data-roc-for="date"></em>
+        </label>
+        <label class="fld">
+          <span>入帳日</span>
+          <input type="date" name="postDate">
+          <em class="roc" data-roc-for="postDate"></em>
+        </label>
+      </div>
+
+      <div class="fld-2">
+        <label class="fld">
+          <span>幣別</span>
+          <input type="text" name="currency" list="curList" placeholder="JPY">
+          <datalist id="curList">
+            <option value="JPY"><option value="KRW"><option value="USD"><option value="TWD"><option value="EUR"><option value="CNY"><option value="HKD">
+          </datalist>
+        </label>
+        <label class="fld">
+          <span>原幣金額</span>
+          <input type="number" name="amount" step="0.01" inputmode="decimal" placeholder="1200">
+        </label>
+      </div>
+
+      <div class="fld-2">
+        <label class="fld">
+          <span>本幣 TWD <b>*</b></span>
+          <input type="number" name="twd" step="0.01" inputmode="decimal" required placeholder="241">
+        </label>
+        <label class="fld">
+          <span>手續費 TWD</span>
+          <input type="number" name="fee" step="0.01" inputmode="decimal" placeholder="4">
+        </label>
+      </div>
+
+      <p class="rate-hint" id="rateHint"></p>
+
+      <div class="fld-2">
+        <label class="fld">
+          <span>分類</span>
+          <select name="category" id="selCategory"></select>
+        </label>
+        <label class="fld">
+          <span>刷卡</span>
+          <select name="card" id="selCard"></select>
+        </label>
+      </div>
+
+      <label class="fld">
+        <span>藝人 / 團體</span>
+        <input type="text" name="artist" list="artistList" placeholder="例：ONE OK ROCK">
+        <datalist id="artistList"></datalist>
+      </label>
+
+      <div class="fld-2">
+        <label class="fld">
+          <span>會員卡號</span>
+          <input type="text" name="memberId" placeholder="TT000274">
+        </label>
+        <label class="fld">
+          <span>下次付款日</span>
+          <input type="date" name="nextDue">
+          <em class="roc" data-roc-for="nextDue"></em>
+        </label>
+      </div>
+
+      <label class="fld">
+        <span>備註</span>
+        <textarea name="note" rows="2" placeholder="例：2026.07.06 ~ 2027.07.06"></textarea>
+      </label>
+
+      <button class="btn btn-danger wide" id="deleteRec" type="button" hidden>刪除這筆</button>
+      <div class="sheet-pad"></div>
+    </form>
+  </div>
+</div>
+
+<button class="fab" id="fab" type="button" aria-label="新增一筆">＋</button>
+
+<nav class="tabbar">
+  <button class="tab is-on" data-tab="dash" type="button"><span>📊</span>總覽</button>
+  <button class="tab" data-tab="list" type="button"><span>🧾</span>明細</button>
+  <button class="tab" data-tab="sub" type="button"><span>🔔</span>訂閱</button>
+  <button class="tab" data-tab="settings" type="button"><span>⚙️</span>設定</button>
+</nav>
+
+<div class="toast" id="toast" hidden></div>
+
+<script src="seed.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
