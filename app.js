@@ -4,7 +4,7 @@
 
   var STORE_KEY = 'fcLedger.v1';
   var THEME_KEY = 'fcLedger.theme';
-  var VERSION = '2.7.5';
+  var VERSION = '2.7.6';
   var PALETTE = ['--c1','--c2','--c3','--c4','--c5','--c6','--c7','--c8','--c9'];
 
   /* ─────────────── 小工具 ─────────────── */
@@ -920,6 +920,7 @@
   var AMT_RE = /^-?\d[\d,]*(?:\.\d+)?$/;
   var CODE_RE = /^(TW|JP|US|KR|HK|SG|IE|GB|CN|AU|TWD|JPY|USD|KRW|HKD|EUR|CNY|SGD|AUD)$/i;
   var DATE_RE = /^\d{1,2}[\/-]\d{1,2}$/;
+  var CURR_FX_RE = /^(JPY|USD|KRW|HKD|EUR|CNY|SGD|AUD|GBP|THB|MYR|IDR|VND|PHP|NZD|CAD|CHF|DKK|SEK|NOK)$/i;
 
   /* 帳單每行的欄位順序各家不同：
      台新／國泰／寰宇 → 消費日 入帳日 店名 台幣 [折算日 消費地 幣別 外幣]  → 取店名後「第一個」金額
@@ -964,8 +965,28 @@
       var cat = (!opts.category || opts.category === '其他')
         ? guessCategory(desc, opts.category || '其他')
         : opts.category;
+
+      // 外幣偵測：聯邦 → 幣別+外幣金額在台幣前；國泰等 → 在台幣後
+      var fxCurr = '', fxAmt = 0;
+      if (union) {
+        for (var fi = stop; fi < amtIdx - 1; fi++) {
+          if (CURR_FX_RE.test(toks[fi]) && AMT_RE.test(toks[fi + 1])) {
+            fxCurr = toks[fi].toUpperCase();
+            fxAmt = parseFloat(toks[fi + 1].replace(/,/g, ''));
+            break;
+          }
+        }
+      } else {
+        for (var gi = amtIdx + 1; gi < toks.length - 1; gi++) {
+          if (CURR_FX_RE.test(toks[gi]) && AMT_RE.test(toks[gi + 1])) {
+            fxCurr = toks[gi].toUpperCase();
+            fxAmt = parseFloat(toks[gi + 1].replace(/,/g, ''));
+            break;
+          }
+        }
+      }
       out.push({ id: uid(), date: d1, postDate: d2, item: desc, twd: amount, fee: 0,
-                 currency: '', amount: 0, card: opts.card, category: cat,
+                 currency: fxCurr, amount: fxAmt, card: opts.card, category: cat,
                  note: '', memberId: '', nextDue: '', artist: '' });
     });
     return { rows: out, skipped: skipped };
@@ -1011,14 +1032,17 @@
       return;
     }
     var sum = res.rows.reduce(function (a, r) { return a + r.twd + r.fee; }, 0);
+    var hasFx = res.rows.some(function (r) { return r.currency; });
     $('#pasteResult').innerHTML =
       '<p class="hint" style="margin:10px 0 6px">解析出 <b>' + res.rows.length + '</b> 筆，合計 <b>NT$ ' + money(sum) +
       '</b>（略過 ' + res.skipped + ' 行）。確認沒問題再按「加入這些紀錄」，加入後可以逐筆改分類。</p>' +
-      '<div class="tbl-scroll"><table><thead><tr><th>消費日</th><th>入帳</th><th>項目</th><th>分類</th><th>金額</th></tr></thead><tbody>' +
+      '<div class="tbl-scroll"><table><thead><tr><th>消費日</th><th>入帳</th><th>項目</th><th>分類</th>' +
+      (hasFx ? '<th>外幣</th>' : '') + '<th>台幣</th></tr></thead><tbody>' +
       res.rows.map(function (r) {
         return '<tr><td>' + (toROC(r.date) || '<span style="color:var(--danger)">?</span>') + '</td>' +
           '<td>' + toROC(r.postDate) + '</td><td>' + esc(r.item) + '</td>' +
           '<td><span class="pill">' + esc(r.category) + '</span></td>' +
+          (hasFx ? '<td class="num">' + (r.currency ? r.currency + '&nbsp;' + r.amount.toLocaleString() : '—') + '</td>' : '') +
           '<td class="num">' + money(r.twd + r.fee) + '</td></tr>';
       }).join('') + '</tbody></table></div>';
   }
