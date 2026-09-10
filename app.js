@@ -4,7 +4,7 @@
 
   var STORE_KEY = 'fcLedger.v1';
   var THEME_KEY = 'fcLedger.theme';
-  var VERSION = '2.8.2';
+  var VERSION = '2.8.3';
   var PALETTE = ['--c1','--c2','--c3','--c4','--c5','--c6','--c7','--c8','--c9'];
 
   /* ─────────────── 小工具 ─────────────── */
@@ -932,7 +932,7 @@
     }
     return fallback || '其他';
   }
-  var SKIP_RE = /繳款|轉帳|已收到|自動轉帳|網銀行動繳|本期應繳|上期|小計|總計|本期消費|應繳總額|信用額度|循環|帳單分期\s*\d+\/\d+期(本金|利息)|期本金|期利息/;
+  var SKIP_RE = /繳款|轉帳|已收到|自動轉帳|網銀行動繳|本期應繳|上期|小計|總計|本期消費|應繳總額|信用額度|循環|帳單分期|期本金|期利息|信用卡消費折抵/;
   var FEE_RE = /手續費|服務費|結匯/;
 
   var AMT_RE = /^-?\d[\d,]*(?:\.\d+)?$/;
@@ -944,15 +944,26 @@
      台新／國泰／寰宇 → 消費日 入帳日 店名 台幣 [折算日 消費地 幣別 外幣]  → 取店名後「第一個」金額
      聯邦             → 入帳日 消費日 店名 [消費地 折算日 幣別 外幣] 台幣  → 取整行「最後一個」金額 */
   function parseStatement(text, opts) {
-    var lines = toHalf(text).split(/\r?\n/);
+    // 預處理：不以民國日期開頭的行，接到上一行後面（處理台新帳單換行）
+    var DATE_HEAD = /^\d{3}[\/-]\d{1,2}[\/-]\d{1,2}/;
+    var raw0 = toHalf(text).replace(/\t/g, ' ');
+    var rawLines = raw0.split(/\r?\n/);
+    var joined = [];
+    rawLines.forEach(function (l) {
+      var t = l.trim();
+      if (!t) return;
+      if (DATE_HEAD.test(t)) { joined.push(t); }
+      else if (joined.length) { joined[joined.length - 1] += ' ' + t; }
+    });
+    var lines = joined;
+
     var out = [], skipped = 0;
     var D = '(\\d{7}|\\d{1,4}[\\/-]\\d{1,2}[\\/-]\\d{1,2}|\\d{1,2}[\\/-]\\d{1,2})';
     var re = new RegExp('^\\s*' + D + '(?:\\s+' + D + ')?\\s+(.+?)$');
     var union = opts.format === 'union';
     var rocYear = opts.year != null && opts.year !== '' ? Number(opts.year) : null;
 
-    lines.forEach(function (raw) {
-      var line = raw.replace(/\t/g, '  ').trim();
+    lines.forEach(function (line) {
       if (!line) return;
       var m = line.match(re);
       if (!m) { skipped++; return; }
@@ -974,7 +985,8 @@
         if (CODE_RE.test(toks[k]) || DATE_RE.test(toks[k]) || AMT_RE.test(toks[k])) { stop = k; break; }
       }
       var desc = toks.slice(0, stop).join(' ').trim() || '(未命名)';
-      if (SKIP_RE.test(desc)) { skipped++; return; }
+      // 也對完整尾段做 SKIP 測試，防止 desc 被日期 token 截斷（如 26/05 帳單分期...）
+      if (SKIP_RE.test(desc) || SKIP_RE.test(m[3])) { skipped++; return; }
 
       if (FEE_RE.test(desc) && out.length) { out[out.length - 1].fee += amount; return; }
 
