@@ -116,6 +116,7 @@ h1,h2,h3{margin:0}
   box-shadow:var(--shadow);
 }
 .budget-hero.over{background:linear-gradient(135deg,#e0433f 0%,#b3245c 100%)}
+.budget-hero.done{background:linear-gradient(135deg,#1c9e6d 0%,#0f8f8a 100%)}
 .bh-k{font-size:12px;opacity:.85;font-weight:700}
 .bh-v{font-size:36px;font-weight:800;letter-spacing:-.02em;font-variant-numeric:tabular-nums;line-height:1.15}
 .bh-sub{font-size:12.5px;opacity:.9;margin-top:4px;line-height:1.5}
@@ -288,9 +289,16 @@ td.num{font-variant-numeric:tabular-nums}
 .tab{
   flex:1;background:none;border:0;cursor:pointer;color:var(--muted);
   height:var(--tab-h);display:flex;flex-direction:column;align-items:center;justify-content:center;
-  gap:2px;font-size:10.5px;font-weight:700;
+  gap:2px;font-size:10px;font-weight:700;min-width:0;padding:0 2px;
 }
+.tab{position:relative}
 .tab span{font-size:19px;line-height:1}
+.tab-badge{
+  position:absolute;top:7px;left:calc(50% + 6px);
+  min-width:17px;height:17px;padding:0 4px;border-radius:9px;
+  background:var(--danger);color:#fff;font-size:10px;font-weight:800;
+  font-style:normal;line-height:17px;text-align:center;
+}
 .tab.is-on{color:var(--accent)}
 
 /* ── toast ────────────────────────────────────────── */
@@ -321,6 +329,7 @@ td.num{font-variant-numeric:tabular-nums}
   .tab span{font-size:17px}
   .tab:hover{background:var(--surface-2)}
   .tab.is-on{background:var(--accent-soft)}
+  .tab-badge{position:static;margin-left:auto}
 
   .topbar{padding:14px 28px 0}
   .topbar-main .brand{display:none}

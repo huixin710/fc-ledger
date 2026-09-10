@@ -4,7 +4,7 @@
 
   var STORE_KEY = 'fcLedger.v1';
   var THEME_KEY = 'fcLedger.theme';
-  var VERSION = '2.2.0';
+  var VERSION = '2.3.0';
   var PALETTE = ['--c1','--c2','--c3','--c4','--c5','--c6','--c7','--c8','--c9'];
 
   /* ─────────────── 小工具 ─────────────── */
@@ -125,24 +125,35 @@
     return m;
   }
 
-  /* 待入帳（本幣留空）的用上面那組匯率估一個金額。
-     不估的話預算會看起來比實際寬鬆，等帳單來才發現超支。 */
+  /* 本幣留空時補一個金額。台幣消費的原幣就是台幣，直接用、不必估；
+     外幣才用上面那組平均匯率推算——不推的話預算會看起來比實際寬鬆。 */
   function estimated(r) {
-    if (r.twd != null || !r.currency || !num(r.amount)) return null;
-    var m = rates()[r.currency];
+    if (r.twd != null || !num(r.amount)) return null;
+    var cur = (r.currency || 'TWD').toUpperCase();
+    if (cur === 'TWD') return { twd: num(r.amount), fee: num(r.fee), rate: 1, exact: true };
+    var m = rates()[cur];
     if (!m || !m.amt) return null;
     var rate = m.twd / m.amt;
     var twd = num(r.amount) * rate;
-    return { twd: twd, fee: m.twd ? twd * (m.fee / m.twd) : 0, rate: rate };
+    return { twd: twd, fee: m.twd ? twd * (m.fee / m.twd) : 0, rate: rate, exact: false };
   }
 
   function total(r) {
     if (r.twd == null) {
-      if (db.budget && db.budget.estimatePending === false) return 0;
       var e = estimated(r);
-      return e ? e.twd + e.fee : 0;
+      if (!e) return 0;
+      // 開關只管「估算」，台幣那種確定金額一律計入
+      if (!e.exact && db.budget && db.budget.estimatePending === false) return 0;
+      return e.twd + e.fee;
     }
     return num(r.twd) + num(r.fee);
+  }
+
+  /* 未入帳 = 帳單上還沒出現的：金額待補，或金額有了但還沒填入帳日 */
+  function isPending(r) { return r.twd == null || !r.postDate; }
+  function pendingRecords() {
+    return db.records.filter(isPending)
+      .sort(function (a, b) { return (b.date || '').localeCompare(a.date || ''); });
   }
 
   function inPeriod(r) {
@@ -324,6 +335,9 @@
     var exSum = excluded.reduce(function (a, r) { return a + total(r); }, 0);
     var pending = counted.filter(function (r) { return r.twd == null && total(r); });
     var pendSum = pending.reduce(function (a, r) { return a + total(r); }, 0);
+    // 只有外幣推算出來的才叫「估算」，台幣的原幣就是確定金額
+    var pendEst = pending.filter(function (r) { var e = estimated(r); return e && !e.exact; });
+    var pendEstSum = pendEst.reduce(function (a, r) { return a + total(r); }, 0);
     var cap = disposable();
     var left = cap - spent;
     var pct = cap > 0 ? Math.min(100, (spent / cap) * 100) : 100;
@@ -346,8 +360,10 @@
       '<div class="bh-bar"><i style="width:' + pct.toFixed(1) + '%"></i></div>' +
       '<div class="bh-foot"><span>已用 ' + (cap > 0 ? Math.round((spent / cap) * 100) : 0) + '%</span>' +
         '<span>' + money(spent) + ' / ' + money(cap) + '</span></div>' +
-      (pendSum ? '<div class="bh-note">已含 ' + pending.length + ' 筆待入帳的估算 ~' + money(pendSum) +
-        '（用你歷史上的平均匯率推算，帳單來了補上實際金額就會自動更正）</div>' : '') +
+      (pendSum ? '<div class="bh-note">已含 ' + pending.length + ' 筆待入帳共 ' +
+        (pendEstSum ? '~' : '') + money(pendSum) +
+        (pendEstSum ? '，其中 ' + pendEst.length + ' 筆外幣用平均匯率估了 ~' + money(pendEstSum) : '') +
+        '。帳單來了補上實際金額就會自動更正</div>' : '') +
       (exSum ? '<div class="bh-note">另有 ' + money(exSum) + ' 的 ' + (b.excludeCats || []).join('、') +
         '，已在固定支出預留，不重複計入</div>' : '');
 
@@ -526,6 +542,66 @@
     return list;
   }
 
+  /* ─────────────── 未入帳 ─────────────── */
+  function recRow(r) {
+    var catIdx = {};
+    db.categories.forEach(function (c, i) { catIdx[c] = i; });
+    var ci = catIdx[r.category] != null ? catIdx[r.category] : 8;
+    var t = total(r);
+    var est = (r.twd == null && t) ? estimated(r) : null;
+    var amtTxt = r.twd == null
+      ? (t ? (est && est.exact ? money(t) : '~' + money(t)) : '待入帳')
+      : money(t);
+    var meta = [toROC(r.date) || '無日期'];
+    if (r.card) meta.push('<span class="pill">' + esc(r.card) + '</span>');
+    if (r.artist) meta.push(esc(r.artist));
+    var age = r.date ? daysBetween(r.date, todayISO()) : 0;
+    if (age > 0) meta.push(age + ' 天前');
+
+    return '<button class="rec" type="button" data-id="' + r.id + '">' +
+      '<span class="rec-chip" style="background:' + color(ci) + '">' + esc((r.category || '其他').slice(0, 3)) + '</span>' +
+      '<span class="rec-body"><span class="rec-title">' + esc(r.item || '(未命名)') + '</span>' +
+        '<span class="rec-meta">' + meta.join('<span>·</span>') + '</span></span>' +
+      '<span class="rec-amt"><span class="rec-twd' + (r.twd == null ? ' pending' : '') + '">' + amtTxt + '</span><br>' +
+        '<span class="rec-orig">' + (r.currency && r.currency !== 'TWD' ? esc(r.currency) + ' ' + money2(num(r.amount)) : '') +
+        (est && !est.exact ? '<br>估算 @' + est.rate.toFixed(4) : '') + '</span></span></button>';
+  }
+
+  function updatePendBadge() {
+    var n = pendingRecords().length, badge = $('#pendBadge');
+    badge.textContent = n; badge.hidden = !n;
+  }
+
+  function renderPending() {
+    var all = pendingRecords();
+    var noAmount = all.filter(function (r) { return r.twd == null; });
+    var noDate = all.filter(function (r) { return r.twd != null && !r.postDate; });
+    var sum = all.reduce(function (a, r) { return a + total(r); }, 0);
+    var estSum = noAmount.reduce(function (a, r) {
+      var e = estimated(r);
+      return a + (e && !e.exact ? total(r) : 0);
+    }, 0);
+
+    $('#pendHero').className = 'budget-hero' + (all.length ? '' : ' done');
+    $('#pendHero').innerHTML = all.length
+      ? '<div class="bh-k">還沒對到帳單的</div>' +
+        '<div class="bh-v">' + (estSum ? '~' : '') + 'NT$ ' + money(sum) + '</div>' +
+        '<div class="bh-sub">' + all.length + ' 筆　·　' + noAmount.length + ' 筆金額待補、' +
+          noDate.length + ' 筆只差入帳日' +
+          (estSum ? '<br>其中 ~' + money(estSum) + ' 是用平均匯率估的' : '') + '</div>'
+      : '<div class="bh-k">未入帳</div><div class="bh-v">全部對完了 🎉</div>' +
+        '<div class="bh-sub">每一筆都有本幣金額和入帳日</div>';
+
+    $('#pendAmount').innerHTML = noAmount.length ? noAmount.map(recRow).join('')
+      : '<p class="empty">沒有金額待補的紀錄</p>';
+    $('#pendDate').innerHTML = noDate.length ? noDate.map(recRow).join('')
+      : '<p class="empty">沒有等著填入帳日的紀錄</p>';
+
+    var badge = $('#pendBadge');
+    badge.textContent = all.length;
+    badge.hidden = !all.length;
+  }
+
   function renderList() {
     var list = filteredRecords();
     var sum = list.reduce(function (a, r) { return a + total(r); }, 0);
@@ -559,8 +635,10 @@
       if (r.memberId) meta.push('#' + esc(r.memberId));
       var t = total(r);
       var est = (r.twd == null && t) ? estimated(r) : null;   // 關掉估算時就不要再印匯率
-      // 估算值前面加 ~，不要讓它看起來像已經確定的金額
-      var amtTxt = r.twd == null ? (t ? '~' + money(t) : '待入帳') : money(t);
+      // 推算出來的前面加 ~，不要讓它看起來像已經確定的金額；台幣是確定的，不加
+      var amtTxt = r.twd == null
+        ? (t ? (est && est.exact ? money(t) : '~' + money(t)) : '待入帳')
+        : money(t);
 
       html += '<button class="rec" type="button" data-id="' + r.id + '">' +
         '<span class="rec-chip" style="background:' + color(ci) + '">' + esc((r.category || '其他').slice(0, 3)) + '</span>' +
@@ -569,7 +647,7 @@
         '<span class="rec-amt"><span class="rec-twd' + (r.twd == null ? ' pending' : (t < 0 ? ' credit' : '')) + '">' +
           amtTxt + '</span><br>' +
           '<span class="rec-orig">' + (r.currency && r.currency !== 'TWD' ? esc(r.currency) + ' ' + money2(num(r.amount)) : '') +
-          (est ? '<br>估算 @' + est.rate.toFixed(4) : '') +
+          (est && !est.exact ? '<br>估算 @' + est.rate.toFixed(4) : '') +
           (num(r.fee) ? '<br>費 ' + money2(num(r.fee)) : '') + '</span></span></button>';
     });
     $('#records').innerHTML = html;
@@ -1013,16 +1091,18 @@
     ui.tab = t;
     $$('.view').forEach(function (v) { v.hidden = v.id !== 'view-' + t; });
     $$('.tab').forEach(function (b) { b.classList.toggle('is-on', b.dataset.tab === t); });
-    $('#periodBar').style.display = (t === 'settings') ? 'none' : '';
+    $('#periodBar').style.display = (t === 'settings' || t === 'pending') ? 'none' : '';
     $('#fab').hidden = (t === 'settings');
     window.scrollTo(0, 0);
     renderAll();
   }
   function renderAll() {
     renderPeriodBar();
+    updatePendBadge();
     if (ui.tab === 'dash') renderDash();
     else if (ui.tab === 'budget') renderBudget();
     else if (ui.tab === 'list') renderList();
+    else if (ui.tab === 'pending') renderPending();
     else if (ui.tab === 'settings') renderSettings();
   }
 
@@ -1069,9 +1149,11 @@
       db.records = db.records.filter(function (r) { return r.id !== ui.editingId; });
       save(); refreshOptions(); closeSheet(); renderAll(); toast('已刪除');
     };
-    $('#records').addEventListener('click', function (e) {
-      var b = e.target.closest('.rec');
-      if (b) openSheet(b.dataset.id);
+    ['#records', '#pendAmount', '#pendDate'].forEach(function (sel) {
+      $(sel).addEventListener('click', function (e) {
+        var b = e.target.closest('.rec');
+        if (b) openSheet(b.dataset.id);
+      });
     });
 
     ['q', 'fCategory', 'fCard', 'fCurrency', 'fArtist', 'sortBy'].forEach(function (id) {

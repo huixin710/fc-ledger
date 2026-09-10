@@ -12,7 +12,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="FC 記帳本">
-<link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="styles.css?v=2.3.0">
 </head>
 <body>
 
@@ -110,6 +110,24 @@
     </div>
     <div class="list-total" id="listTotal"></div>
     <div id="records"></div>
+  </section>
+
+  <!-- ═══════════ 未入帳 ═══════════ -->
+  <section class="view" id="view-pending" hidden>
+    <div class="budget-hero" id="pendHero"></div>
+
+    <div class="card">
+      <h2 class="card-h">金額待補 — 等帳單出來</h2>
+      <p class="hint">本幣還沒填。外幣的先用你歷史平均匯率估一個數計入預算（顯示成 <b>~金額</b>），
+        台幣的直接用原幣金額。帳單來了點進去把本幣和入帳日補上就好。</p>
+      <div id="pendAmount"></div>
+    </div>
+
+    <div class="card">
+      <h2 class="card-h">只差入帳日</h2>
+      <p class="hint">金額已經確定，但還沒對到帳單。對完帳單把入帳日填上，這裡就會清掉。</p>
+      <div id="pendDate"></div>
+    </div>
   </section>
 
   <!-- ═══════════ 設定 ═══════════ -->
@@ -309,12 +327,13 @@
   <button class="tab is-on" data-tab="dash" type="button"><span>📊</span>總覽</button>
   <button class="tab" data-tab="budget" type="button"><span>🎯</span>預算</button>
   <button class="tab" data-tab="list" type="button"><span>🧾</span>明細</button>
+  <button class="tab" data-tab="pending" type="button"><span>⏳</span>未入帳<i class="tab-badge" id="pendBadge" hidden></i></button>
   <button class="tab" data-tab="settings" type="button"><span>⚙️</span>設定</button>
 </nav>
 
 <div class="toast" id="toast" hidden></div>
 
-<script src="seed.js"></script>
-<script src="app.js"></script>
+<script src="seed.js?v=2.3.0"></script>
+<script src="app.js?v=2.3.0"></script>
 </body>
 </html>
