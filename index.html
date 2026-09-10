@@ -12,7 +12,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="FC 記帳本">
-<link rel="stylesheet" href="styles.css?v=2.7.0">
+<link rel="stylesheet" href="styles.css?v=2.7.1">
 </head>
 <body>
 
@@ -166,6 +166,7 @@
           <option value="union">聯邦：入帳日印在消費日前面、台幣金額在整行最後</option>
         </select>
       </label>
+      <p id="pasteDetect" class="paste-detect"></p>
       <textarea id="pasteBox" class="paste-box" rows="6" placeholder="115/08/10&#9;115/08/11&#9;SP NATORIUM STOREMINATO&#9;2,093&#10;08/22&#9;08/26&#9;統一時代百貨台北店&#9;3,490"></textarea>
       <div class="btn-row">
         <button class="btn btn-ghost" id="pastePreview" type="button">解析看看</button>
@@ -395,7 +396,7 @@
 
 <div class="toast" id="toast" hidden></div>
 
-<script src="seed.js?v=2.7.0"></script>
-<script src="app.js?v=2.7.0"></script>
+<script src="seed.js?v=2.7.1"></script>
+<script src="app.js?v=2.7.1"></script>
 </body>
 </html>

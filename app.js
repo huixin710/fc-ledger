@@ -4,7 +4,7 @@
 
   var STORE_KEY = 'fcLedger.v1';
   var THEME_KEY = 'fcLedger.theme';
-  var VERSION = '2.7.0';
+  var VERSION = '2.7.1';
   var PALETTE = ['--c1','--c2','--c3','--c4','--c5','--c6','--c7','--c8','--c9'];
 
   /* ─────────────── 小工具 ─────────────── */
@@ -919,6 +919,30 @@
     return { rows: out, skipped: skipped };
   }
 
+  function detectStatement(text) {
+    var result = { card: null, format: null };
+    var last4Map = {};
+    db.cards.forEach(function (c) {
+      var m = c.match(/(\d{4})$/);
+      if (m) last4Map[m[1]] = c;
+    });
+    var patterns = [
+      /末四碼[：:]\s*(\d{4})/,
+      /卡號末四碼[：:]\s*(\d{4})/,
+      /帳單卡號[^0-9\n]*(\d{4})/,
+      /信用卡號[^0-9\n]*(\d{4})/,
+      /[\*×✕]{4,}(\d{4})/,
+      /\*{2,}(\d{4})\b/
+    ];
+    for (var i = 0; i < patterns.length; i++) {
+      var m = text.match(patterns[i]);
+      if (m && last4Map[m[1]]) { result.card = last4Map[m[1]]; break; }
+    }
+    if (/聯邦/.test(text)) result.format = 'union';
+    else if (/台新|國泰|新光|富邦|中信|中國信託/.test(text)) result.format = 'std';
+    return result;
+  }
+
   function renderPastePreview() {
     var res = parseStatement($('#pasteBox').value, {
       card: $('#pasteCard').value, category: $('#pasteCat').value, format: $('#pasteFormat').value
@@ -1496,7 +1520,16 @@
 
     // 貼上帳單
     $('#pastePreview').onclick = renderPastePreview;
-    $('#pasteBox').addEventListener('input', function () { $('#pasteCommit').disabled = true; });
+    $('#pasteBox').addEventListener('input', function () {
+      $('#pasteCommit').disabled = true;
+      var text = this.value;
+      if (!text.trim()) { $('#pasteDetect').textContent = ''; return; }
+      var d = detectStatement(text);
+      var hints = [];
+      if (d.card) { $('#pasteCard').value = d.card; hints.push('卡片：' + d.card); }
+      if (d.format) { $('#pasteFormat').value = d.format; hints.push('格式：' + (d.format === 'union' ? '聯邦' : '一般')); }
+      $('#pasteDetect').textContent = hints.length ? '🔍 自動偵測 → ' + hints.join('　') : '';
+    });
     $('#pasteCommit').onclick = function () {
       if (!pasteDraft.length) return;
       db.records = db.records.concat(pasteDraft);
