@@ -36,6 +36,68 @@ window.SEED = {
   "富邦MASTER 6848",
   "富邦MASTER 0969"
  ],
+ "cardMeta": {
+  "台新Richart 3208": {
+   "close": 7,
+   "due": 22,
+   "guess": false
+  },
+  "台新Richart 0602": {
+   "close": 7,
+   "due": 22,
+   "guess": false
+  },
+  "寰宇卡 2007": {
+   "close": 2,
+   "due": 18,
+   "guess": true
+  },
+  "國泰CUBE 3624": {
+   "close": 27,
+   "due": 15,
+   "guess": true
+  },
+  "國泰CUBE 2225": {
+   "close": 27,
+   "due": 15,
+   "guess": true
+  },
+  "聯邦M悠遊鈦 0206": {
+   "close": 15,
+   "due": 1,
+   "guess": true
+  },
+  "聯邦賴點卡 9908": {
+   "close": 15,
+   "due": 1,
+   "guess": true
+  },
+  "LINE Bank 1308": {
+   "close": 15,
+   "due": 1,
+   "guess": true
+  },
+  "4511 卡": {
+   "close": 25,
+   "due": 10,
+   "guess": true
+  },
+  "6357 卡": {
+   "close": 25,
+   "due": 10,
+   "guess": true
+  },
+  "富邦MASTER 6848": {
+   "close": 8,
+   "due": 23,
+   "guess": true
+  },
+  "富邦MASTER 0969": {
+   "close": 8,
+   "due": 23,
+   "guess": true
+  }
+ },
  "records": [
   {
    "date": "2026-04-06",

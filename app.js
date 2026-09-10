@@ -4,7 +4,7 @@
 
   var STORE_KEY = 'fcLedger.v1';
   var THEME_KEY = 'fcLedger.theme';
-  var VERSION = '2.3.0';
+  var VERSION = '2.4.0';
   var PALETTE = ['--c1','--c2','--c3','--c4','--c5','--c6','--c7','--c8','--c9'];
 
   /* ─────────────── 小工具 ─────────────── */
@@ -70,7 +70,8 @@
   function rocYM(ym) { return (Number(ym.slice(0, 4)) - 1911) + '/' + ym.slice(5); }
 
   /* ─────────────── 狀態 ─────────────── */
-  var db = { version: 2, records: [], categories: [], cards: [], installments: [], subs: [], budget: null };
+  var db = { version: 2, records: [], categories: [], cards: [], cardMeta: {},
+             installments: [], subs: [], budget: null };
   var ui = { tab: 'dash', mode: 'month', ym: ymOf(todayISO()), year: todayISO().slice(0, 4),
              editingId: null, allPeriods: false };
   var pasteDraft = [];
@@ -88,6 +89,7 @@
         db.cards = (d.cards && d.cards.length) ? d.cards : window.SEED.cards.slice();
         db.installments = Array.isArray(d.installments) ? d.installments : clone(window.SEED.installments);
         db.subs = Array.isArray(d.subs) ? d.subs : clone(window.SEED.subs);
+        db.cardMeta = d.cardMeta || clone(window.SEED.cardMeta);
         db.budget = d.budget || defaultBudget();
         if (!db.budget.excludeCats) db.budget.excludeCats = [];
         if (db.budget.estimatePending == null) db.budget.estimatePending = true;
@@ -102,6 +104,7 @@
     db.cards = window.SEED.cards.slice();
     db.installments = clone(window.SEED.installments);
     db.subs = clone(window.SEED.subs);
+    db.cardMeta = clone(window.SEED.cardMeta);
     db.budget = defaultBudget();
     save();
   }
@@ -149,10 +152,38 @@
     return num(r.twd) + num(r.fee);
   }
 
-  /* 未入帳 = 帳單上還沒出現的：金額待補，或金額有了但還沒填入帳日 */
-  function isPending(r) { return r.twd == null || !r.postDate; }
+  /* ── 帳單週期 ──
+     信用卡的一筆消費會經過三個日子：消費日 → 入帳日 → 出現在某一期帳單。
+     結帳日之後刷的會落到下一期，所以「這個月刷了多少」和「這期帳單多少」是兩回事。 */
+  function pad2(n) { return String(n).padStart(2, '0'); }
+  function cardMeta(card) {
+    return (db.cardMeta && db.cardMeta[card]) || { close: 31, due: 15, guess: true };
+  }
+  /* 依入帳日與該卡結帳日，決定落在哪一期帳單（回傳該期的帳單月） */
+  function billYm(r) {
+    if (!r.postDate) return '';
+    var c = cardMeta(r.card).close;
+    var y = Number(r.postDate.slice(0, 4)), m = Number(r.postDate.slice(5, 7)), d = Number(r.postDate.slice(8));
+    if (d > c) { m++; if (m > 12) { m = 1; y++; } }
+    return y + '-' + pad2(m);
+  }
+  /* 該卡今天之前最近的一次結帳日 */
+  function lastClose(card) {
+    var c = Math.min(cardMeta(card).close, 28), t = todayISO();
+    var thisM = t.slice(0, 8) + pad2(c);
+    return t >= thisM ? thisM : addMonths(thisM, -1);
+  }
+  function nextClose(card) { return addMonths(lastClose(card), 1); }
+
+  /* billed    已經出現在某一期帳單
+     upcoming  結帳日之後才刷的，會進下一期
+     unmatched 消費日早於結帳日、照理已出帳，但入帳日還空著 → 該去對帳單了 */
+  function billState(r) {
+    if (r.postDate) return 'billed';
+    return (r.date && r.date > lastClose(r.card)) ? 'upcoming' : 'unmatched';
+  }
   function pendingRecords() {
-    return db.records.filter(isPending)
+    return db.records.filter(function (r) { return billState(r) !== 'billed'; })
       .sort(function (a, b) { return (b.date || '').localeCompare(a.date || ''); });
   }
 
@@ -517,7 +548,7 @@
   function filteredRecords() {
     var q = toHalf($('#q').value).trim().toLowerCase();
     var fc = $('#fCategory').value, fk = $('#fCard').value,
-        fu = $('#fCurrency').value, fa = $('#fArtist').value;
+        fu = $('#fCurrency').value, fa = $('#fArtist').value, fb = $('#fBill').value;
 
     var list = db.records.filter(function (r) {
       if (!ui.allPeriods && !inPeriod(r)) return false;
@@ -525,6 +556,10 @@
       if (fk && (r.card || '') !== fk) return false;
       if (fu && (r.currency || '') !== fu) return false;
       if (fa && (r.artist || '') !== fa) return false;
+      if (fb) {
+        var st = billState(r);
+        if (fb === '_up' ? st !== 'upcoming' : (fb === '_un' ? st !== 'unmatched' : billYm(r) !== fb)) return false;
+      }
       if (q) {
         var hay = toHalf([r.item, r.note, r.memberId, r.artist, r.category, r.card].join(' ')).toLowerCase();
         if (hay.indexOf(q) === -1) return false;
@@ -542,7 +577,15 @@
     return list;
   }
 
-  /* ─────────────── 未入帳 ─────────────── */
+  /* ─────────────── 帳單 ─────────────── */
+  /* 明細裡標出這筆落在哪一期帳單 */
+  function billPill(r) {
+    var st = billState(r);
+    if (st === 'upcoming') return '<span class="pill warn">未出帳</span>';
+    if (st === 'unmatched') return '<span class="pill danger">待對帳</span>';
+    return '<span class="pill">' + rocYM(billYm(r)) + ' 帳單</span>';
+  }
+
   function recRow(r) {
     var catIdx = {};
     db.categories.forEach(function (c, i) { catIdx[c] = i; });
@@ -574,32 +617,46 @@
 
   function renderPending() {
     var all = pendingRecords();
-    var noAmount = all.filter(function (r) { return r.twd == null; });
-    var noDate = all.filter(function (r) { return r.twd != null && !r.postDate; });
-    var sum = all.reduce(function (a, r) { return a + total(r); }, 0);
-    var estSum = noAmount.reduce(function (a, r) {
-      var e = estimated(r);
-      return a + (e && !e.exact ? total(r) : 0);
-    }, 0);
+    var upcoming = all.filter(function (r) { return billState(r) === 'upcoming'; });
+    var unmatched = all.filter(function (r) { return billState(r) === 'unmatched'; });
+    var upSum = upcoming.reduce(function (a, r) { return a + total(r); }, 0);
+    var unSum = unmatched.reduce(function (a, r) { return a + total(r); }, 0);
+    var hasEst = all.some(function (r) { var e = estimated(r); return e && !e.exact; });
 
     $('#pendHero').className = 'budget-hero' + (all.length ? '' : ' done');
     $('#pendHero').innerHTML = all.length
-      ? '<div class="bh-k">還沒對到帳單的</div>' +
-        '<div class="bh-v">' + (estSum ? '~' : '') + 'NT$ ' + money(sum) + '</div>' +
-        '<div class="bh-sub">' + all.length + ' 筆　·　' + noAmount.length + ' 筆金額待補、' +
-          noDate.length + ' 筆只差入帳日' +
-          (estSum ? '<br>其中 ~' + money(estSum) + ' 是用平均匯率估的' : '') + '</div>'
-      : '<div class="bh-k">未入帳</div><div class="bh-v">全部對完了 🎉</div>' +
-        '<div class="bh-sub">每一筆都有本幣金額和入帳日</div>';
+      ? '<div class="bh-k">已刷、還沒出帳</div>' +
+        '<div class="bh-v">' + (hasEst ? '~' : '') + 'NT$ ' + money(upSum) + '</div>' +
+        '<div class="bh-sub">' + upcoming.length + ' 筆，會出現在下一期帳單' +
+          (unmatched.length ? '<br>另有 ' + unmatched.length + ' 筆（' + money(unSum) +
+            '）照理已出帳但還沒對到，要處理' : '') + '</div>'
+      : '<div class="bh-k">帳單</div><div class="bh-v">全部對完了 🎉</div>' +
+        '<div class="bh-sub">每一筆都對到帳單期別了</div>';
 
-    $('#pendAmount').innerHTML = noAmount.length ? noAmount.map(recRow).join('')
-      : '<p class="empty">沒有金額待補的紀錄</p>';
-    $('#pendDate').innerHTML = noDate.length ? noDate.map(recRow).join('')
-      : '<p class="empty">沒有等著填入帳日的紀錄</p>';
+    // 各卡的結帳／繳款日與未出帳金額
+    var cards = db.cards.filter(function (c) {
+      return db.records.some(function (r) { return r.card === c; });
+    });
+    $('#cardCycles').innerHTML = '<div class="tbl-scroll"><table><thead><tr>' +
+      '<th>卡片</th><th>結帳</th><th>繳款</th><th>下次結帳</th><th>未出帳</th></tr></thead><tbody>' +
+      cards.map(function (c) {
+        var m = cardMeta(c);
+        var up = upcoming.filter(function (r) { return r.card === c; })
+          .reduce(function (a, r) { return a + total(r); }, 0);
+        return '<tr><td>' + esc(c) + (m.guess ? ' <span class="pill">推測</span>' : '') + '</td>' +
+          '<td class="num">' + m.close + ' 號</td><td class="num">' + m.due + ' 號</td>' +
+          '<td class="num">' + toROC(nextClose(c)) + '</td>' +
+          '<td class="num">' + (up ? '<b>' + money(up) + '</b>' : '—') + '</td></tr>';
+      }).join('') + '</tbody></table></div>' +
+      '<p class="hint" style="margin:10px 0 0">標「推測」的是我從入帳日反推的，' +
+      '請對照實際帳單到<b>設定 → 信用卡</b>改成正確的日期，這頁才會準。</p>';
 
-    var badge = $('#pendBadge');
-    badge.textContent = all.length;
-    badge.hidden = !all.length;
+    $('#pendAmount').innerHTML = upcoming.length ? upcoming.map(recRow).join('')
+      : '<p class="empty">目前沒有結帳後才刷的消費</p>';
+    $('#pendDate').innerHTML = unmatched.length ? unmatched.map(recRow).join('')
+      : '<p class="empty">沒有待對帳的紀錄 🎉</p>';
+
+    updatePendBadge();
   }
 
   function renderList() {
@@ -631,7 +688,7 @@
       var meta = [toROC(r.date) || '無日期'];
       if (r.card) meta.push('<span class="pill">' + esc(r.card) + '</span>');
       if (r.artist) meta.push(esc(r.artist));
-      if (!r.postDate) meta.push('<span class="pill">未入帳</span>');
+      meta.push(billPill(r));
       if (r.memberId) meta.push('#' + esc(r.memberId));
       var t = total(r);
       var est = (r.twd == null && t) ? estimated(r) : null;   // 關掉估算時就不要再印匯率
@@ -827,6 +884,7 @@
           if (d.cards && d.cards.length) db.cards = d.cards;
           if (d.installments) db.installments = d.installments;
           if (d.subs) db.subs = d.subs;
+          if (d.cardMeta) db.cardMeta = d.cardMeta;
           if (d.budget) db.budget = d.budget;
         } else {
           recs = importCsv(text);
@@ -858,7 +916,40 @@
       $$('button', el).forEach(function (b) { b.onclick = function () { onDel(Number(b.dataset.i)); }; });
     }
     tags($('#catEditor'), db.categories, function (i) { db.categories.splice(i, 1); save(); renderSettings(); refreshOptions(); });
-    tags($('#cardEditor'), db.cards, function (i) { db.cards.splice(i, 1); save(); renderSettings(); refreshOptions(); });
+    $('#cardEditor').innerHTML = db.cards.map(function (c, i) {
+      var m = cardMeta(c);
+      return '<div class="row-edit"><input type="text" data-k="name" data-i="' + i + '" value="' + esc(c) + '">' +
+        '<input type="number" min="1" max="31" data-k="close" data-i="' + i + '" value="' + m.close + '" title="結帳日" style="width:66px">' +
+        '<input type="number" min="1" max="31" data-k="due" data-i="' + i + '" value="' + m.due + '" title="繳款日" style="width:66px">' +
+        (m.guess ? '<span class="pill">推測</span>' : '') +
+        '<button type="button" data-del="' + i + '" aria-label="刪除">×</button></div>';
+    }).join('') + '<p class="hint" style="margin:8px 0 0">欄位依序是：卡片名稱、結帳日、繳款日</p>';
+    $$('#cardEditor input').forEach(function (inp) {
+      inp.onchange = function () {
+        var i = Number(inp.dataset.i), old = db.cards[i];
+        var m = db.cardMeta[old] || (db.cardMeta[old] = { close: 31, due: 15, guess: true });
+        if (inp.dataset.k === 'name') {
+          var nn = inp.value.trim();
+          if (!nn || nn === old) return;
+          db.cards[i] = nn;
+          db.cardMeta[nn] = m; delete db.cardMeta[old];
+          db.records.forEach(function (r) { if (r.card === old) r.card = nn; });
+          db.subs.forEach(function (x) { if (x.card === old) x.card = nn; });
+          db.installments.forEach(function (x) { if (x.card === old) x.card = nn; });
+        } else {
+          m[inp.dataset.k] = Math.min(31, Math.max(1, num(inp.value) || 1));
+          m.guess = false;   // 使用者親自填的就不是推測了
+        }
+        save(); refreshOptions(); renderSettings();
+      };
+    });
+    $$('#cardEditor button').forEach(function (b) {
+      b.onclick = function () {
+        var i = Number(b.dataset.del);
+        delete db.cardMeta[db.cards[i]];
+        db.cards.splice(i, 1); save(); renderSettings(); refreshOptions();
+      };
+    });
     $('#verLabel').textContent = 'v' + VERSION + '　·　' + db.records.length + ' 筆紀錄';
   }
 
@@ -976,6 +1067,14 @@
       return Object.keys(s).sort();
     };
     fill($('#fCurrency'), uniq('currency'), true, '全部幣別');
+    var billSel = $('#fBill'), bv = billSel.value, yms = {};
+    db.records.forEach(function (r) { if (r.postDate) yms[billYm(r)] = 1; });
+    billSel.innerHTML = '<option value="">全部帳單期</option>' +
+      '<option value="_up">未出帳</option><option value="_un">待對帳</option>' +
+      Object.keys(yms).sort().reverse().map(function (y) {
+        return '<option value="' + y + '">' + rocYM(y) + ' 帳單</option>';
+      }).join('');
+    billSel.value = bv;
     fill($('#fArtist'), uniq('artist'), true, '全部藝人');
     $('#itemList').innerHTML = uniq('item').map(function (x) { return '<option value="' + esc(x) + '">'; }).join('');
     $('#artistList').innerHTML = uniq('artist').map(function (x) { return '<option value="' + esc(x) + '">'; }).join('');
@@ -1156,7 +1255,7 @@
       });
     });
 
-    ['q', 'fCategory', 'fCard', 'fCurrency', 'fArtist', 'sortBy'].forEach(function (id) {
+    ['q', 'fCategory', 'fCard', 'fCurrency', 'fArtist', 'fBill', 'sortBy'].forEach(function (id) {
       $('#' + id).addEventListener('input', renderList);
       $('#' + id).addEventListener('change', renderList);
     });
@@ -1227,7 +1326,11 @@
     };
     $('#addCard').onclick = function () {
       var v = $('#newCard').value.trim();
-      if (v && db.cards.indexOf(v) === -1) { db.cards.push(v); save(); renderSettings(); refreshOptions(); }
+      if (v && db.cards.indexOf(v) === -1) {
+        db.cards.push(v);
+        db.cardMeta[v] = { close: 31, due: 15, guess: true };
+        save(); renderSettings(); refreshOptions();
+      }
       $('#newCard').value = '';
     };
 

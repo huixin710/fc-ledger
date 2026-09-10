@@ -12,7 +12,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="FC 記帳本">
-<link rel="stylesheet" href="styles.css?v=2.3.0">
+<link rel="stylesheet" href="styles.css?v=2.4.0">
 </head>
 <body>
 
@@ -99,6 +99,7 @@
         <select id="fCard"><option value="">全部卡別</option></select>
         <select id="fCurrency"><option value="">全部幣別</option></select>
         <select id="fArtist"><option value="">全部藝人</option></select>
+        <select id="fBill"><option value="">全部帳單期</option></select>
         <select id="sortBy">
           <option value="date-desc">消費日 ↓</option>
           <option value="date-asc">消費日 ↑</option>
@@ -112,20 +113,27 @@
     <div id="records"></div>
   </section>
 
-  <!-- ═══════════ 未入帳 ═══════════ -->
+  <!-- ═══════════ 帳單 ═══════════ -->
   <section class="view" id="view-pending" hidden>
     <div class="budget-hero" id="pendHero"></div>
 
     <div class="card">
-      <h2 class="card-h">金額待補 — 等帳單出來</h2>
-      <p class="hint">本幣還沒填。外幣的先用你歷史平均匯率估一個數計入預算（顯示成 <b>~金額</b>），
-        台幣的直接用原幣金額。帳單來了點進去把本幣和入帳日補上就好。</p>
+      <h2 class="card-h">各卡結帳日</h2>
+      <p class="hint">一筆消費要看<b>入帳日</b>落在結帳日前還後，才知道它進哪一期帳單。
+        結帳日之後刷的，這期帳單上不會有，下期才會來。</p>
+      <div id="cardCycles"></div>
+    </div>
+
+    <div class="card">
+      <h2 class="card-h">未出帳 — 結帳後才刷的</h2>
+      <p class="hint">這些會出現在下一期帳單。本幣還沒填的，外幣用歷史平均匯率估（顯示成 <b>~金額</b>）、
+        台幣直接用原幣金額，所以預算已經算進去了。</p>
       <div id="pendAmount"></div>
     </div>
 
     <div class="card">
-      <h2 class="card-h">只差入帳日</h2>
-      <p class="hint">金額已經確定，但還沒對到帳單。對完帳單把入帳日填上，這裡就會清掉。</p>
+      <h2 class="card-h">待對帳 — 照理已出帳但沒填入帳日</h2>
+      <p class="hint">消費日已經早於結帳日，帳單上應該找得到了。點進去把入帳日（和本幣）補上，這裡就會清掉。</p>
       <div id="pendDate"></div>
     </div>
   </section>
@@ -179,8 +187,10 @@
 
     <div class="card">
       <h2 class="card-h">信用卡</h2>
-      <p class="hint">名稱可以自己改，例如把「4511 卡」改成實際的銀行名稱。</p>
-      <div id="cardEditor" class="tag-editor"></div>
+      <p class="hint">名稱可以自己改（例如把「4511 卡」改成實際的銀行名稱）。
+        <b>結帳日</b>和<b>繳款日</b>請照實際帳單填，「帳單」那頁才會把消費分到正確的期別。
+        標「推測」的是我從入帳日反推的，記得確認。</p>
+      <div id="cardEditor"></div>
       <div class="inline-add">
         <input type="text" id="newCard" placeholder="新增卡別…">
         <button class="btn btn-sm" id="addCard" type="button">加入</button>
@@ -327,13 +337,13 @@
   <button class="tab is-on" data-tab="dash" type="button"><span>📊</span>總覽</button>
   <button class="tab" data-tab="budget" type="button"><span>🎯</span>預算</button>
   <button class="tab" data-tab="list" type="button"><span>🧾</span>明細</button>
-  <button class="tab" data-tab="pending" type="button"><span>⏳</span>未入帳<i class="tab-badge" id="pendBadge" hidden></i></button>
+  <button class="tab" data-tab="pending" type="button"><span>💳</span>帳單<i class="tab-badge" id="pendBadge" hidden></i></button>
   <button class="tab" data-tab="settings" type="button"><span>⚙️</span>設定</button>
 </nav>
 
 <div class="toast" id="toast" hidden></div>
 
-<script src="seed.js?v=2.3.0"></script>
-<script src="app.js?v=2.3.0"></script>
+<script src="seed.js?v=2.4.0"></script>
+<script src="app.js?v=2.4.0"></script>
 </body>
 </html>

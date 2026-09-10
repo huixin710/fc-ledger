@@ -199,6 +199,8 @@ td.num{font-variant-numeric:tabular-nums}
 .rec-twd.credit{color:var(--ok)}
 .rec-orig{font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap}
 .pill{display:inline-block;padding:1px 6px;border-radius:6px;background:var(--surface-2);font-size:10.5px;font-weight:700;color:var(--muted)}
+.pill.warn{background:var(--warn-soft);color:var(--warn)}
+.pill.danger{background:var(--danger-soft);color:var(--danger)}
 .empty{text-align:center;color:var(--muted);padding:34px 20px;font-size:14px;line-height:1.6}
 
 /* ── due / installments ───────────────────────────── */

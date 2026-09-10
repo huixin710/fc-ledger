@@ -263,6 +263,30 @@ SUBS = [
         artist='ONE OK ROCK', due='116/9/9', note='115/09 刷卡，金額待帳單確認'),
 ]
 
+# ─────────────────────────────────────────────────────────────
+# J. 各卡的結帳日／繳款日
+#    close = 每月幾號結帳；入帳日 > close 的那筆就落到下一期帳單。
+#    只有台新是帳單上白紙黑字寫的（結帳 115/09/07、繳款 115/09/22），
+#    其餘是從「哪些入帳日出現在哪一期帳單」反推的，標 guess=True 提醒要確認。
+# ─────────────────────────────────────────────────────────────
+def meta(close, due, guess=True):
+    return dict(close=close, due=due, guess=guess)
+
+CARD_META = {
+    T32:               meta(7, 22, False),
+    TS:                meta(7, 22, False),
+    HY:                meta(2, 18),     # 入帳到 09/01、自動轉帳 08/18
+    C36:               meta(27, 15),    # 入帳到 08/26
+    C22:               meta(27, 15),
+    FED_MAIN:          meta(15, 1),     # 入帳到 08/12
+    FED_LINE:          meta(15, 1),
+    'LINE Bank 1308':  meta(15, 1),
+    '4511 卡':          meta(25, 10),   # 入帳到 08/24、網銀繳款 08/01
+    '6357 卡':          meta(25, 10),
+    FB:                meta(8, 23),     # 入帳到 09/08
+    FB2:               meta(8, 23),
+}
+
 # 年繳、但每個月都該預留的錢
 LIFE = 17297 + 14602            # 台灣人壽 + 全球人壽，都在 2 月一次付清
 BUDGET = dict(
@@ -306,6 +330,27 @@ for ym in sorted(set(r['date'][:7] for r in R)):
     print('  %s  %8s  %3d 筆%s' % (ym, format(round(s(rows)), ','), len(rows),
                                    '（含年繳保費 %s）' % format(round(s(ins)), ',') if ins else ''))
 
+# 驗算：每筆消費依「入帳日 vs 結帳日」落在哪一期帳單
+def bill_ym(r):
+    if not r['postDate']:
+        return None
+    c = CARD_META.get(r['card'], dict(close=31))['close']
+    y, m, dd = (int(x) for x in r['postDate'].split('-'))
+    if dd > c:
+        m += 1
+        if m > 12:
+            m, y = 1, y + 1
+    return '%04d-%02d' % (y, m)
+
+bills = {}
+for r in R:
+    bills.setdefault(bill_ym(r), []).append(r)
+print()
+print('依帳單期別（入帳日 vs 各卡結帳日）：')
+for k in sorted(bills, key=lambda x: (x is None, x)):
+    rows = bills[k]
+    print('  %-10s %8s  %3d 筆' % (k or '未出帳', format(round(s(rows)), ','), len(rows)))
+
 act = [x for x in SUBS if x['active']]
 off = [x for x in SUBS if not x['active']]
 sub_m = sum(x['amount'] for x in act if x['cycle'] == 'month')
@@ -325,7 +370,7 @@ print('\n預算：%s − 固定 %s − 分期 %s = 可自由支配 %s' % (
 out = ('/* 由 tools/build_seed.py 產生，請勿手改。\n'
        '   來源：FC.xlsx + 115/09 台新／寰宇／國泰CUBE／聯邦、115/03 與 115/09 富邦 信用卡帳單 */\n'
        'window.SEED = ' +
-       json.dumps(dict(categories=CATEGORIES, cards=CARDS, records=R, subs=SUBS,
+       json.dumps(dict(categories=CATEGORIES, cards=CARDS, cardMeta=CARD_META, records=R, subs=SUBS,
                        installments=INSTALLMENTS, budget=BUDGET),
                   ensure_ascii=False, indent=1) + ';\n')
 path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'seed.js')
