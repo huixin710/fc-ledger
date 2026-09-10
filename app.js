@@ -4,7 +4,7 @@
 
   var STORE_KEY = 'fcLedger.v1';
   var THEME_KEY = 'fcLedger.theme';
-  var VERSION = '2.8.1';
+  var VERSION = '2.8.2';
   var PALETTE = ['--c1','--c2','--c3','--c4','--c5','--c6','--c7','--c8','--c9'];
 
   /* ─────────────── 小工具 ─────────────── */
@@ -1037,6 +1037,10 @@
     return result;
   }
 
+  function isDupRec(r) {
+    return db.records.some(function (x) { return x.date === r.date && x.twd === r.twd; });
+  }
+
   function renderPastePreview() {
     var res = parseStatement($('#pasteBox').value, {
       card: $('#pasteCard').value, category: $('#pasteCat').value,
@@ -1051,14 +1055,18 @@
     }
     var sum = res.rows.reduce(function (a, r) { return a + r.twd + r.fee; }, 0);
     var hasFx = res.rows.some(function (r) { return r.currency; });
+    var dupCount = res.rows.filter(isDupRec).length;
+    var dupNote = dupCount ? '，<b style="color:var(--danger)">' + dupCount + ' 筆重複</b>（日期＋金額相同，加入時自動略過）' : '';
     $('#pasteResult').innerHTML =
       '<p class="hint" style="margin:10px 0 6px">解析出 <b>' + res.rows.length + '</b> 筆，合計 <b>NT$ ' + money(sum) +
-      '</b>（略過 ' + res.skipped + ' 行）。確認沒問題再按「加入這些紀錄」，加入後可以逐筆改分類。</p>' +
+      '</b>（略過 ' + res.skipped + ' 行）' + dupNote + '。確認沒問題再按「加入這些紀錄」。</p>' +
       '<div class="tbl-scroll"><table><thead><tr><th>消費日</th><th>入帳</th><th>項目</th><th>分類</th>' +
       (hasFx ? '<th>外幣</th>' : '') + '<th>台幣</th></tr></thead><tbody>' +
       res.rows.map(function (r) {
-        return '<tr><td>' + (toROC(r.date) || '<span style="color:var(--danger)">?</span>') + '</td>' +
-          '<td>' + toROC(r.postDate) + '</td><td>' + esc(r.item) + '</td>' +
+        var dup = isDupRec(r);
+        var tr = dup ? '<tr class="dup-row" title="已有相同日期＋金額的紀錄">' : '<tr>';
+        return tr + '<td>' + (toROC(r.date) || '<span style="color:var(--danger)">?</span>') + '</td>' +
+          '<td>' + toROC(r.postDate) + '</td><td>' + esc(r.item) + (dup ? ' <span class="dup-badge">重複</span>' : '') + '</td>' +
           '<td><span class="pill">' + esc(r.category) + '</span></td>' +
           (hasFx ? '<td class="num">' + (r.currency ? r.currency + '&nbsp;' + r.amount.toLocaleString() : '—') + '</td>' : '') +
           '<td class="num">' + money(r.twd + r.fee) + '</td></tr>';
@@ -1678,12 +1686,14 @@
     });
     $('#pasteCommit').onclick = function () {
       if (!pasteDraft.length) return;
-      db.records = db.records.concat(pasteDraft);
+      var toAdd = pasteDraft.filter(function (r) { return !isDupRec(r); });
+      var skipped = pasteDraft.length - toAdd.length;
+      db.records = db.records.concat(toAdd);
       save(); refreshOptions();
-      var n = pasteDraft.length;
       pasteDraft = []; $('#pasteBox').value = ''; $('#pasteResult').innerHTML = '';
       $('#pasteCommit').disabled = true;
-      renderAll(); toast('已加入 ' + n + ' 筆');
+      renderAll();
+      toast('已加入 ' + toAdd.length + ' 筆' + (skipped ? '，略過 ' + skipped + ' 筆重複' : ''));
     };
 
     // 密碼鎖
