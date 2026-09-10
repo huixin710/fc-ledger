@@ -4,7 +4,7 @@
 
   var STORE_KEY = 'fcLedger.v1';
   var THEME_KEY = 'fcLedger.theme';
-  var VERSION = '2.7.8';
+  var VERSION = '2.7.9';
   var PALETTE = ['--c1','--c2','--c3','--c4','--c5','--c6','--c7','--c8','--c9'];
 
   /* ─────────────── 小工具 ─────────────── */
@@ -114,14 +114,30 @@
     '富邦MASTER 6848':       '富邦 momo 卡萬事達 6848',
     '富邦MASTER 0969':       '富邦 Costco 萬事達 0969'
   };
+  var CANON_ORDER = [
+    '中信 All Me 萬事達 4511', '中信 LINE Pay JCB 6357',
+    '國泰 CUBE Visa 3624', '國泰蝦皮萬事達 2225',
+    '新光寰宇 Visa 2007',
+    '台新 Richart JCB 3208', '台新 Richart Visa 0602', '台新 Richart 萬事達 6209',
+    '富邦 momo 卡萬事達 6848', '富邦 Costco 萬事達 0969',
+    '聯邦 M 卡萬事達 0206', '聯邦幫賴點卡 Visa 9908', '聯邦 LINE Bank Visa 1308'
+  ];
   function migrateCardOrder() {
     var START = 25;
     var before = db.cards.join(',');
-    db.cards.sort(function (a, b) {
-      var ca = (db.cardMeta[a] || {}).close || 31;
-      var cb = (db.cardMeta[b] || {}).close || 31;
-      return ((ca - START + 32) % 32) - ((cb - START + 32) % 32);
-    });
+    // 若 db.cards 完整包含 13 張已知卡，直接套用 canonical 順序（穩定、不受快取影響）
+    var canonIdx = {};
+    CANON_ORDER.forEach(function (c, i) { canonIdx[c] = i; });
+    var allKnown = db.cards.every(function (c) { return canonIdx[c] !== undefined; });
+    if (allKnown && db.cards.length === CANON_ORDER.length) {
+      db.cards.sort(function (a, b) { return canonIdx[a] - canonIdx[b]; });
+    } else {
+      db.cards.sort(function (a, b) {
+        var ca = (db.cardMeta[a] || {}).close || 31;
+        var cb = (db.cardMeta[b] || {}).close || 31;
+        return ((ca - START + 32) % 32) - ((cb - START + 32) % 32);
+      });
+    }
     if (db.cards.join(',') !== before) save();
   }
 
