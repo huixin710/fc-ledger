@@ -279,6 +279,17 @@
         <button class="btn btn-sm" id="iAdd" type="button">加入</button>
       </div>
 
+      <h3 class="sub-h">訂閱</h3>
+      <p class="hint">停訂的把勾勾取消（會保留歷史紀錄，只是不再提醒、不算進未來估算）；
+        剛訂還沒扣款的直接新增就好。</p>
+      <div id="bSubs"></div>
+      <div class="inline-add">
+        <input type="text" id="sNewName" placeholder="訂閱名稱">
+        <input type="number" id="sNewAmt" inputmode="numeric" placeholder="金額" style="max-width:90px">
+        <select id="sNewCycle" style="max-width:76px"><option value="month">月</option><option value="year">年</option></select>
+        <button class="btn btn-sm" id="sAdd" type="button">加入</button>
+      </div>
+
       <h3 class="sub-h">不計入每月預算的分類</h3>
       <p class="hint">年繳保費這種「已經在上面用固定支出預留過」的錢，實際付款那個月不該再算一次，
         否則那個月會看起來爆表。</p>

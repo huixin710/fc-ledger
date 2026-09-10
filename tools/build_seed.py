@@ -222,6 +222,47 @@ INSTALLMENTS = [
     dict(name='富邦人壽（保費分期）',  card=FB,  total=13145, monthly=1095, interest=0,  remaining=5475,  apr=0.00),
 ]
 
+# ─────────────────────────────────────────────────────────────
+# I. 訂閱 — 可管理的清單（停訂了就把 active 關掉，新訂的直接加）
+#    金額取最近一次實際扣款；還沒扣過款的填預計金額。
+# ─────────────────────────────────────────────────────────────
+def sub(name, amount, cycle, card, cat, active=True, artist='', member='', due='', note=''):
+    return dict(name=name, amount=amount, cycle=cycle, card=card, category=cat,
+                active=active, artist=artist, memberId=member,
+                nextDue=d(due) if due else '', note=note)
+
+SUBS = [
+    # ── 月費 ──
+    sub('TAKASE TOYA OFFICIAL FANCLUB 月額費', 252, 'month', FED_MAIN, 'FC月費',
+        artist='TAKASE TOYA', member='TT000274'),
+    sub('SITE FEE DWANGO TOKYO', 112, 'month', TS, 'FC月費'),
+    sub('ARTIST SITE TOKYO', 89, 'month', TS, 'FC月費'),
+    sub('ATEEZ Fromm／myArti', 320, 'month', '', 'FC月費', artist='ATEEZ',
+        note='115/09 新訂，尚未出現在帳單'),
+    sub('Apple Store iCloud 200G', 90, 'month', '', '訂閱服務',
+        note='115/09 新訂，尚未出現在帳單'),
+    sub('GOOGLE *VISA0001', 486, 'month', C36, '訂閱服務'),
+    sub('ANTHROPIC* CLAUDE SUB', 647, 'month', TS, '訂閱服務'),
+    sub('CREEPY NUTS FAN APPSHIBUY', 105, 'month', TS, 'FC月費',
+        active=False, artist='CREEPY NUTS', note='115/09 已停訂'),
+    sub('Patreon* Membership', 310, 'month', TS, '訂閱服務',
+        active=False, note='115/09 已停訂'),
+
+    # ── 年費 ──
+    sub('Fumiya Sato Official Site「Maison Fumiya」 年額費', 1742, 'year', FED_MAIN, 'FC年費',
+        artist='Fumiya Sato', member='FS000064', due='116/7/6'),
+    sub('EXIMBAY*WEVERSESEOUL BTS ARMY MEMBERSHIP CARD KRW22,727', 509, 'year', TS, 'FC年費',
+        artist='BTS', member='BA173619663', due='116/5/24'),
+    sub('TOSS*KQENTERTAINMENTSEOUL ATEEZ ATINY MEMBERSHIP', 436, 'year', TS, 'FC年費',
+        artist='ATEEZ', member='BMM9RM', due='116/7/10'),
+    sub('ONE ROOM BACK NUMBER FC TOKYO gold key', 1405, 'year', TS, 'FC年費',
+        artist='back number', member='660787', due='116/8/31'),
+    sub('OFFICIALHIGEDANDISM FC TOKYO STAND BY YOU', 1347, 'year', TS, 'FC年費',
+        artist='Official髭男dism', member='E101185182052', due='116/8/31'),
+    sub('PRIMAL FOOTMARK 2026 ONE OK ROCK', 0, 'year', TS, 'FC年費',
+        artist='ONE OK ROCK', due='116/9/9', note='115/09 刷卡，金額待帳單確認'),
+]
+
 # 年繳、但每個月都該預留的錢
 LIFE = 17297 + 14602            # 台灣人壽 + 全球人壽，都在 2 月一次付清
 BUDGET = dict(
@@ -263,6 +304,16 @@ for ym in sorted(set(r['date'][:7] for r in R)):
     print('  %s  %8s  %3d 筆%s' % (ym, format(round(s(rows)), ','), len(rows),
                                    '（含年繳保費 %s）' % format(round(s(ins)), ',') if ins else ''))
 
+act = [x for x in SUBS if x['active']]
+off = [x for x in SUBS if not x['active']]
+sub_m = sum(x['amount'] for x in act if x['cycle'] == 'month')
+sub_y = sum(x['amount'] for x in act if x['cycle'] == 'year')
+off_m = sum(x['amount'] for x in off if x['cycle'] == 'month')
+print('\n訂閱：生效 %d 筆　月費 %s／月 ＋ 年費 %s／年（月攤 %s）＝ 每月 %s' % (
+    len(act), format(sub_m, ','), format(sub_y, ','),
+    format(round(sub_y / 12), ','), format(round(sub_m + sub_y / 12), ',')))
+print('      已停訂 %d 筆，每月省下 %s' % (len(off), format(off_m, ',')))
+
 fixed_sum = sum(f['amount'] for f in BUDGET['fixed'])
 inst_sum = sum(i['monthly'] + i['interest'] for i in INSTALLMENTS)
 print('\n預算：%s − 固定 %s − 分期 %s = 可自由支配 %s' % (
@@ -272,7 +323,7 @@ print('\n預算：%s − 固定 %s − 分期 %s = 可自由支配 %s' % (
 out = ('/* 由 tools/build_seed.py 產生，請勿手改。\n'
        '   來源：FC.xlsx + 115/09 台新／寰宇／國泰CUBE／聯邦、115/03 與 115/09 富邦 信用卡帳單 */\n'
        'window.SEED = ' +
-       json.dumps(dict(categories=CATEGORIES, cards=CARDS, records=R,
+       json.dumps(dict(categories=CATEGORIES, cards=CARDS, records=R, subs=SUBS,
                        installments=INSTALLMENTS, budget=BUDGET),
                   ensure_ascii=False, indent=1) + ';\n')
 path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'seed.js')

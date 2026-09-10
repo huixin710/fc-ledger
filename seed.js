@@ -1658,6 +1658,188 @@ window.SEED = {
    "artist": ""
   }
  ],
+ "subs": [
+  {
+   "name": "TAKASE TOYA OFFICIAL FANCLUB 月額費",
+   "amount": 252,
+   "cycle": "month",
+   "card": "聯邦M悠遊鈦 0206",
+   "category": "FC月費",
+   "active": true,
+   "artist": "TAKASE TOYA",
+   "memberId": "TT000274",
+   "nextDue": "",
+   "note": ""
+  },
+  {
+   "name": "SITE FEE DWANGO TOKYO",
+   "amount": 112,
+   "cycle": "month",
+   "card": "台新Richart 0602",
+   "category": "FC月費",
+   "active": true,
+   "artist": "",
+   "memberId": "",
+   "nextDue": "",
+   "note": ""
+  },
+  {
+   "name": "ARTIST SITE TOKYO",
+   "amount": 89,
+   "cycle": "month",
+   "card": "台新Richart 0602",
+   "category": "FC月費",
+   "active": true,
+   "artist": "",
+   "memberId": "",
+   "nextDue": "",
+   "note": ""
+  },
+  {
+   "name": "ATEEZ Fromm／myArti",
+   "amount": 320,
+   "cycle": "month",
+   "card": "",
+   "category": "FC月費",
+   "active": true,
+   "artist": "ATEEZ",
+   "memberId": "",
+   "nextDue": "",
+   "note": "115/09 新訂，尚未出現在帳單"
+  },
+  {
+   "name": "Apple Store iCloud 200G",
+   "amount": 90,
+   "cycle": "month",
+   "card": "",
+   "category": "訂閱服務",
+   "active": true,
+   "artist": "",
+   "memberId": "",
+   "nextDue": "",
+   "note": "115/09 新訂，尚未出現在帳單"
+  },
+  {
+   "name": "GOOGLE *VISA0001",
+   "amount": 486,
+   "cycle": "month",
+   "card": "國泰CUBE 3624",
+   "category": "訂閱服務",
+   "active": true,
+   "artist": "",
+   "memberId": "",
+   "nextDue": "",
+   "note": ""
+  },
+  {
+   "name": "ANTHROPIC* CLAUDE SUB",
+   "amount": 647,
+   "cycle": "month",
+   "card": "台新Richart 0602",
+   "category": "訂閱服務",
+   "active": true,
+   "artist": "",
+   "memberId": "",
+   "nextDue": "",
+   "note": ""
+  },
+  {
+   "name": "CREEPY NUTS FAN APPSHIBUY",
+   "amount": 105,
+   "cycle": "month",
+   "card": "台新Richart 0602",
+   "category": "FC月費",
+   "active": false,
+   "artist": "CREEPY NUTS",
+   "memberId": "",
+   "nextDue": "",
+   "note": "115/09 已停訂"
+  },
+  {
+   "name": "Patreon* Membership",
+   "amount": 310,
+   "cycle": "month",
+   "card": "台新Richart 0602",
+   "category": "訂閱服務",
+   "active": false,
+   "artist": "",
+   "memberId": "",
+   "nextDue": "",
+   "note": "115/09 已停訂"
+  },
+  {
+   "name": "Fumiya Sato Official Site「Maison Fumiya」 年額費",
+   "amount": 1742,
+   "cycle": "year",
+   "card": "聯邦M悠遊鈦 0206",
+   "category": "FC年費",
+   "active": true,
+   "artist": "Fumiya Sato",
+   "memberId": "FS000064",
+   "nextDue": "2027-07-06",
+   "note": ""
+  },
+  {
+   "name": "EXIMBAY*WEVERSESEOUL BTS ARMY MEMBERSHIP CARD KRW22,727",
+   "amount": 509,
+   "cycle": "year",
+   "card": "台新Richart 0602",
+   "category": "FC年費",
+   "active": true,
+   "artist": "BTS",
+   "memberId": "BA173619663",
+   "nextDue": "2027-05-24",
+   "note": ""
+  },
+  {
+   "name": "TOSS*KQENTERTAINMENTSEOUL ATEEZ ATINY MEMBERSHIP",
+   "amount": 436,
+   "cycle": "year",
+   "card": "台新Richart 0602",
+   "category": "FC年費",
+   "active": true,
+   "artist": "ATEEZ",
+   "memberId": "BMM9RM",
+   "nextDue": "2027-07-10",
+   "note": ""
+  },
+  {
+   "name": "ONE ROOM BACK NUMBER FC TOKYO gold key",
+   "amount": 1405,
+   "cycle": "year",
+   "card": "台新Richart 0602",
+   "category": "FC年費",
+   "active": true,
+   "artist": "back number",
+   "memberId": "660787",
+   "nextDue": "2027-08-31",
+   "note": ""
+  },
+  {
+   "name": "OFFICIALHIGEDANDISM FC TOKYO STAND BY YOU",
+   "amount": 1347,
+   "cycle": "year",
+   "card": "台新Richart 0602",
+   "category": "FC年費",
+   "active": true,
+   "artist": "Official髭男dism",
+   "memberId": "E101185182052",
+   "nextDue": "2027-08-31",
+   "note": ""
+  },
+  {
+   "name": "PRIMAL FOOTMARK 2026 ONE OK ROCK",
+   "amount": 0,
+   "cycle": "year",
+   "card": "台新Richart 0602",
+   "category": "FC年費",
+   "active": true,
+   "artist": "ONE OK ROCK",
+   "memberId": "",
+   "nextDue": "2027-09-09",
+   "note": "115/09 刷卡，金額待帳單確認"
+  }
+ ],
  "installments": [
   {
    "name": "26/05 帳單分期",

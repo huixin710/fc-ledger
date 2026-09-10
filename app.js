@@ -4,7 +4,7 @@
 
   var STORE_KEY = 'fcLedger.v1';
   var THEME_KEY = 'fcLedger.theme';
-  var VERSION = '2.0.0';
+  var VERSION = '2.1.0';
   var PALETTE = ['--c1','--c2','--c3','--c4','--c5','--c6','--c7','--c8','--c9'];
 
   /* ─────────────── 小工具 ─────────────── */
@@ -70,7 +70,7 @@
   function rocYM(ym) { return (Number(ym.slice(0, 4)) - 1911) + '/' + ym.slice(5); }
 
   /* ─────────────── 狀態 ─────────────── */
-  var db = { version: 2, records: [], categories: [], cards: [], installments: [], budget: null };
+  var db = { version: 2, records: [], categories: [], cards: [], installments: [], subs: [], budget: null };
   var ui = { tab: 'dash', mode: 'month', ym: ymOf(todayISO()), year: todayISO().slice(0, 4),
              editingId: null, allPeriods: false };
   var pasteDraft = [];
@@ -87,6 +87,7 @@
         db.categories = (d.categories && d.categories.length) ? d.categories : window.SEED.categories.slice();
         db.cards = (d.cards && d.cards.length) ? d.cards : window.SEED.cards.slice();
         db.installments = Array.isArray(d.installments) ? d.installments : clone(window.SEED.installments);
+        db.subs = Array.isArray(d.subs) ? d.subs : clone(window.SEED.subs);
         db.budget = d.budget || defaultBudget();
         if (!db.budget.excludeCats) db.budget.excludeCats = [];
         return;
@@ -99,6 +100,7 @@
     db.categories = window.SEED.categories.slice();
     db.cards = window.SEED.cards.slice();
     db.installments = clone(window.SEED.installments);
+    db.subs = clone(window.SEED.subs);
     db.budget = defaultBudget();
     save();
   }
@@ -315,6 +317,14 @@
       html += '<div class="brk minus"><span class="brk-n">存起來</span><span class="brk-v">− ' + money(num(b.savings)) + '</span></div>';
     }
     html += '<div class="brk tot"><span class="brk-n">可自由支配</span><span class="brk-v">' + money(disposable()) + '</span></div>';
+    var sm = subMonthly();
+    if (sm > 0) {
+      html += '<div class="brk" style="border-bottom:0;opacity:.85"><span class="brk-n">其中訂閱已佔用' +
+        '<small>' + db.subs.filter(function (s) { return s.active; }).length + ' 個生效中，含年費月攤</small></span>' +
+        '<span class="brk-v">' + money(sm) + '</span></div>' +
+        '<div class="brk" style="border-bottom:0;padding-top:0"><span class="brk-n"><b>真正彈性的錢</b></span>' +
+        '<span class="brk-v"><b>' + money(disposable() - sm) + '</b></span></div>';
+    }
     $('#budgetBreakdown').innerHTML = html;
 
     // 分期
@@ -371,59 +381,75 @@
         (counted !== sum ? '（* 的分類已在固定支出預留，不計入）' : '') + '。</p>' : '');
   }
 
-  function subscriptionGroups() {
-    var map = {};
-    db.records.forEach(function (r) {
-      if (r.category !== 'FC月費' && r.category !== 'FC年費' && r.category !== '訂閱服務') return;
-      var key = (r.item || '') + '||' + (r.memberId || '');
-      if (!map[key]) map[key] = { item: r.item, memberId: r.memberId, artist: r.artist, category: r.category, recs: [] };
-      map[key].recs.push(r);
-    });
-    return Object.keys(map).map(function (k) {
-      var g = map[k];
-      g.recs.sort(function (a, b) { return (b.date || '').localeCompare(a.date || ''); });
-      var last = g.recs[0];
-      g.lastDate = last.date;
-      g.monthly = g.category !== 'FC年費';
-      var billed = g.recs.filter(function (r) { return r.twd != null; });
-      g.avg = billed.length ? billed.reduce(function (a, r) { return a + total(r); }, 0) / billed.length : null;
-      g.count = g.recs.length;
-      g.next = last.nextDue || addMonths(last.date, g.monthly ? 1 : 12);
-      g.yearly = g.avg == null ? null : (g.monthly ? g.avg * 12 : g.avg);
-      return g;
-    }).sort(function (a, b) { return (a.next || '').localeCompare(b.next || ''); });
+  /* 訂閱是自己維護的清單（db.subs）。停訂就把 active 關掉——不能只靠歷史紀錄推導，
+     否則停掉的會一直跳提醒，剛訂還沒扣款的又完全不會出現。 */
+  function subMonthly() {
+    return db.subs.reduce(function (a, s) {
+      if (!s.active) return a;
+      return a + (s.cycle === 'year' ? num(s.amount) / 12 : num(s.amount));
+    }, 0);
+  }
+  // 月費用「最近一次實際扣款 + 1 個月」，才看得出這個月的還沒記到帳
+  function subNext(s) {
+    if (s.cycle === 'year') return s.nextDue || '';
+    var last = db.records.filter(function (r) { return r.item === s.name && r.date; })
+      .map(function (r) { return r.date; }).sort().pop();
+    return last ? addMonths(last, 1) : (s.nextDue || '');
+  }
+  function subPaidCount(s) {
+    return db.records.filter(function (r) { return r.item === s.name; }).length;
   }
 
   function renderDue() {
-    var groups = subscriptionGroups(), today = todayISO();
-    var due = groups.filter(function (g) { return daysBetween(today, g.next) <= 90; });
-    $('#dueList').innerHTML = due.length ? due.map(function (g) {
-      var d = daysBetween(today, g.next);
+    var today = todayISO();
+    var due = db.subs.filter(function (s) { return s.active; })
+      .map(function (s) { var c = clone(s); c.next = subNext(s); return c; })
+      .filter(function (s) { return s.next && daysBetween(today, s.next) <= 90; })
+      .sort(function (a, b) { return a.next.localeCompare(b.next); });
+
+    $('#dueList').innerHTML = due.length ? due.map(function (s) {
+      var d = daysBetween(today, s.next);
       var cls = d < 0 ? 'over' : (d <= 14 ? 'soon' : '');
       var txt = d < 0 ? '已過 ' + (-d) + ' 天' : (d === 0 ? '今天' : d + ' 天後');
       return '<div class="due"><div class="due-body">' +
-        '<div class="due-name">' + esc(g.item) + '</div>' +
-        '<div class="due-sub">' + toROC(g.next) + '　·　' + (g.avg == null ? '金額待補' : '約 NT$ ' + money(g.avg)) +
-        (g.memberId ? '　·　#' + esc(g.memberId) : '') + '</div></div>' +
+        '<div class="due-name">' + esc(s.name) + '</div>' +
+        '<div class="due-sub">' + toROC(s.next) + '　·　' +
+        (num(s.amount) ? '約 NT$ ' + money(s.amount) : '金額待補') +
+        (s.memberId ? '　·　#' + esc(s.memberId) : '') + '</div></div>' +
         '<span class="due-badge ' + cls + '">' + txt + '</span></div>';
-    }).join('') : '<p class="empty">未來 90 天內沒有到期的訂閱 🎉</p>';
+    }).join('') : '<p class="empty">未來 90 天內沒有要續訂的 🎉</p>';
   }
 
   function renderSubTable() {
-    var groups = subscriptionGroups();
-    var yearSum = groups.reduce(function (a, g) { return a + (g.yearly || 0); }, 0);
-    $('#subList').innerHTML = groups.length
-      ? '<div class="tbl-scroll"><table><thead><tr><th>項目</th><th>週期</th><th>次數</th><th>平均</th><th>年估</th></tr></thead><tbody>' +
-        groups.map(function (g) {
-          return '<tr><td>' + esc(g.item.length > 24 ? g.item.slice(0, 24) + '…' : g.item) +
-            (g.artist ? '<br><span class="pill">' + esc(g.artist) + '</span>' : '') + '</td>' +
-            '<td>' + (g.monthly ? '月' : '年') + '</td><td class="num">' + g.count + '</td>' +
-            '<td class="num">' + (g.avg == null ? '—' : money(g.avg)) + '</td>' +
-            '<td class="num"><b>' + (g.yearly == null ? '—' : money(g.yearly)) + '</b></td></tr>';
-        }).join('') +
-        '<tr><td><b>年度合計</b></td><td></td><td></td><td class="num">每月約 ' + money(yearSum / 12) + '</td>' +
-        '<td class="num"><b>' + money(yearSum) + '</b></td></tr></tbody></table></div>'
-      : '<p class="empty">還沒有訂閱型的紀錄</p>';
+    var act = db.subs.filter(function (s) { return s.active; });
+    var off = db.subs.filter(function (s) { return !s.active; });
+    if (!db.subs.length) { $('#subList').innerHTML = '<p class="empty">還沒有登記訂閱</p>'; return; }
+
+    var row = function (s) {
+      var yr = s.cycle === 'year' ? num(s.amount) : num(s.amount) * 12;
+      var n = subPaidCount(s);
+      return '<tr' + (s.active ? '' : ' style="opacity:.5"') + '><td>' +
+        esc(s.name.length > 24 ? s.name.slice(0, 24) + '…' : s.name) +
+        (s.artist ? '<br><span class="pill">' + esc(s.artist) + '</span>' : '') +
+        (s.active ? '' : ' <span class="pill">已停訂</span>') +
+        (s.active && !n ? ' <span class="pill">未扣款</span>' : '') + '</td>' +
+        '<td>' + (s.cycle === 'year' ? '年' : '月') + '</td>' +
+        '<td class="num">' + (num(s.amount) ? money(s.amount) : '—') + '</td>' +
+        '<td class="num"><b>' + (num(yr) ? money(yr) : '—') + '</b></td></tr>';
+    };
+    var yearSum = act.reduce(function (a, s) {
+      return a + (s.cycle === 'year' ? num(s.amount) : num(s.amount) * 12);
+    }, 0);
+
+    $('#subList').innerHTML =
+      '<div class="tbl-scroll"><table><thead><tr><th>項目</th><th>週期</th><th>每次</th><th>年估</th></tr></thead><tbody>' +
+      act.map(row).join('') +
+      '<tr><td><b>生效中合計</b></td><td></td><td class="num">每月約 ' + money(subMonthly()) + '</td>' +
+      '<td class="num"><b>' + money(yearSum) + '</b></td></tr>' +
+      off.map(row).join('') +
+      '</tbody></table></div>' +
+      '<button class="btn btn-ghost btn-sm wide" id="editSubs" type="button">管理訂閱</button>';
+    $('#editSubs').onclick = openBudgetSheet;
   }
 
   /* ─────────────── 明細 ─────────────── */
@@ -673,6 +699,7 @@
           if (d.categories && d.categories.length) db.categories = d.categories;
           if (d.cards && d.cards.length) db.cards = d.cards;
           if (d.installments) db.installments = d.installments;
+          if (d.subs) db.subs = d.subs;
           if (d.budget) db.budget = d.budget;
         } else {
           recs = importCsv(text);
@@ -713,7 +740,7 @@
     var b = db.budget;
     $('#bIncome').value = b.income || '';
     $('#bSavings').value = b.savings || '';
-    drawFixed(); drawInstall(); drawExclude();
+    drawFixed(); drawInstall(); drawSubs(); drawExclude();
     $('#bSheet').hidden = false;
     document.body.style.overflow = 'hidden';
   }
@@ -733,6 +760,38 @@
       btn.onclick = function () { db.budget.fixed.splice(Number(btn.dataset.del), 1); drawFixed(); };
     });
   }
+  function drawSubs() {
+    db.subs.sort(function (a, b) {
+      return (b.active ? 1 : 0) - (a.active ? 1 : 0) || a.cycle.localeCompare(b.cycle);
+    });
+    $('#bSubs').innerHTML = db.subs.map(function (s, i) {
+      return '<div class="row-edit"' + (s.active ? '' : ' style="opacity:.55"') + '>' +
+        '<input type="checkbox" data-k="active" data-i="' + i + '"' + (s.active ? ' checked' : '') +
+          ' title="生效中" style="flex:0 0 auto;width:auto">' +
+        '<input type="text" data-k="name" data-i="' + i + '" value="' + esc(s.name) + '">' +
+        '<input type="number" data-k="amount" data-i="' + i + '" value="' + num(s.amount) + '" style="width:84px">' +
+        '<select data-k="cycle" data-i="' + i + '" style="width:62px;padding:9px 6px;border:1px solid var(--line);border-radius:9px;background:var(--surface)">' +
+          '<option value="month"' + (s.cycle === 'month' ? ' selected' : '') + '>月</option>' +
+          '<option value="year"' + (s.cycle === 'year' ? ' selected' : '') + '>年</option></select>' +
+        '<button type="button" data-del="' + i + '" aria-label="刪除">×</button></div>';
+    }).join('') || '<p class="hint">還沒有訂閱</p>';
+
+    $$('#bSubs input, #bSubs select').forEach(function (el) {
+      el.onchange = el.oninput = function () {
+        var s = db.subs[Number(el.dataset.i)], k = el.dataset.k;
+        if (k === 'active') { s.active = el.checked; el.closest('.row-edit').style.opacity = el.checked ? '' : '.55'; }
+        else if (k === 'amount') s.amount = num(el.value);
+        else s[k] = el.value;
+      };
+    });
+    $$('#bSubs button').forEach(function (b) {
+      b.onclick = function () {
+        if (!confirm('刪除這筆訂閱？只是不再追蹤，歷史消費紀錄會留著。')) return;
+        db.subs.splice(Number(b.dataset.del), 1); drawSubs();
+      };
+    });
+  }
+
   function drawExclude() {
     $('#bExclude').innerHTML = db.categories.map(function (c) {
       return '<label class="tag" style="padding-left:8px;cursor:pointer">' +
@@ -994,6 +1053,14 @@
       db.installments.push({ name: n, card: '', total: 0, monthly: num($('#iNewMonthly').value),
                              interest: 0, remaining: num($('#iNewRemain').value), apr: 0 });
       $('#iNewName').value = ''; $('#iNewMonthly').value = ''; $('#iNewRemain').value = ''; drawInstall();
+    };
+    $('#sAdd').onclick = function () {
+      var n = $('#sNewName').value.trim();
+      if (!n) return;
+      db.subs.push({ name: n, amount: num($('#sNewAmt').value), cycle: $('#sNewCycle').value,
+                     card: '', category: '訂閱服務', active: true, artist: '', memberId: '',
+                     nextDue: '', note: '' });
+      $('#sNewName').value = ''; $('#sNewAmt').value = ''; drawSubs();
     };
 
     // 貼上帳單
