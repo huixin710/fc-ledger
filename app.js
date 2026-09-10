@@ -309,7 +309,8 @@
           '<span class="rec-meta">' + meta.join('<span>·</span>') + '</span>' +
         '</span>' +
         '<span class="rec-amt">' +
-          '<span class="rec-twd">' + money(total(r)) + '</span><br>' +
+          '<span class="rec-twd' + (r.twd == null ? ' pending' : '') + '">' +
+            (r.twd == null ? '待入帳' : money(total(r))) + '</span><br>' +
           '<span class="rec-orig">' + (r.currency ? esc(r.currency) + ' ' + money2(num(r.amount)) : '') +
           (num(r.fee) ? '<br>費 ' + money2(num(r.fee)) : '') + '</span>' +
         '</span>' +
@@ -333,11 +334,12 @@
       var last = g.recs[0];
       g.last = last;
       g.lastDate = last.date;
-      g.avg = g.recs.reduce(function (a, r) { return a + total(r); }, 0) / g.recs.length;
+      var billed = g.recs.filter(function (r) { return r.twd != null; });
+      g.avg = billed.length ? billed.reduce(function (a, r) { return a + total(r); }, 0) / billed.length : null;
       g.count = g.recs.length;
       g.monthly = g.category === '訂閱月費';
       g.next = last.nextDue || addMonths(last.date, g.monthly ? 1 : 12);
-      g.yearly = g.monthly ? g.avg * 12 : g.avg;
+      g.yearly = g.avg == null ? null : (g.monthly ? g.avg * 12 : g.avg);
       return g;
     }).sort(function (a, b) { return (a.next || '').localeCompare(b.next || ''); });
   }
@@ -356,7 +358,7 @@
       var txt = d < 0 ? '已過 ' + (-d) + ' 天' : (d === 0 ? '今天' : d + ' 天後');
       return '<div class="due"><div class="due-body">' +
         '<div class="due-name">' + esc(g.item) + '</div>' +
-        '<div class="due-sub">' + toROC(g.next) + '　·　約 NT$ ' + money(g.avg) +
+        '<div class="due-sub">' + toROC(g.next) + '　·　' + (g.avg == null ? '金額待補' : '約 NT$ ' + money(g.avg)) +
         (g.memberId ? '　·　#' + esc(g.memberId) : '') + '</div>' +
         '</div><span class="due-badge ' + cls + '">' + txt + '</span></div>';
     }).join('') : '<p class="empty">未來 90 天內沒有到期的訂閱 🎉</p>';
@@ -368,11 +370,11 @@
             (g.artist ? '<br><span class="pill">' + esc(g.artist) + '</span>' : '') + '</td>' +
             '<td>' + (g.monthly ? '月' : '年') + '</td>' +
             '<td class="num">' + g.count + '</td>' +
-            '<td class="num">' + money(g.avg) + '</td>' +
-            '<td class="num"><b>' + money(g.yearly) + '</b></td></tr>';
+            '<td class="num">' + (g.avg == null ? '—' : money(g.avg)) + '</td>' +
+            '<td class="num"><b>' + (g.yearly == null ? '—' : money(g.yearly)) + '</b></td></tr>';
         }).join('') +
         '<tr><td><b>年度固定支出合計</b></td><td></td><td></td><td></td><td class="num"><b>' +
-        money(groups.reduce(function (a, g) { return a + g.yearly; }, 0)) + '</b></td></tr>' +
+        money(groups.reduce(function (a, g) { return a + (g.yearly || 0); }, 0)) + '</b></td></tr>' +
         '</tbody></table></div>'
       : '<p class="empty">還沒有訂閱型的紀錄</p>';
   }
@@ -467,7 +469,7 @@
         date: toISO(g('date')), postDate: toISO(g('postDate')), nextDue: toISO(g('nextDue')),
         item: g('item'), currency: g('currency').trim(),
         amount: num(g('amount').replace(/,/g, '')),
-        twd: num(g('twd').replace(/,/g, '')),
+        twd: g('twd') === '' ? null : num(g('twd').replace(/,/g, '')),
         fee: num(g('fee').replace(/,/g, '')),
         card: g('card'), note: g('note'), memberId: g('memberId'),
         category: g('category') || '其他', artist: g('artist')
@@ -587,7 +589,7 @@
       postDate: v('postDate'),
       currency: v('currency').trim().toUpperCase(),
       amount: num(v('amount')),
-      twd: num(v('twd')),
+      twd: v('twd') === '' ? null : num(v('twd')),
       fee: num(v('fee')),
       category: v('category'),
       card: v('card'),
