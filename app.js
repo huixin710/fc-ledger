@@ -4,7 +4,7 @@
 
   var STORE_KEY = 'fcLedger.v1';
   var THEME_KEY = 'fcLedger.theme';
-  var VERSION = '2.7.2';
+  var VERSION = '2.7.3';
   var PALETTE = ['--c1','--c2','--c3','--c4','--c5','--c6','--c7','--c8','--c9'];
 
   /* ─────────────── 小工具 ─────────────── */
@@ -376,7 +376,13 @@
     return (db.budget.fixed || []).reduce(function (a, f) { return a + num(f.amount); }, 0);
   }
   function disposable() {
-    return num(db.budget.income) - fixedTotal() - installMonthly() - num(db.budget.savings);
+    return num(db.budget.income) - fixedTotal() - installMonthly() - subMonthly() - num(db.budget.savings);
+  }
+  function subItemSet() {
+    var s = {};
+    db.subs.filter(function (x) { return x.active && x.cycle !== 'year'; })
+      .forEach(function (x) { if (x.name) s[x.name] = true; });
+    return s;
   }
   function isExcluded(cat) {
     return (db.budget.excludeCats || []).indexOf(cat) > -1;
@@ -521,8 +527,12 @@
     var ym = ui.mode === 'month' ? ui.ym : ymOf(todayISO());
     var monthRecs = db.records.filter(function (r) { return ymOf(r.date) === ym; });
     // 年繳保費之類已在固定支出預留過的分類，不重複算進「已花」
-    var counted = monthRecs.filter(function (r) { return !isExcluded(r.category); });
+    // 月訂閱費已從 disposable 預扣，也不計入「已花」避免雙重扣
+    var subSet = subItemSet();
+    var counted = monthRecs.filter(function (r) { return !isExcluded(r.category) && !subSet[r.item]; });
     var excluded = monthRecs.filter(function (r) { return isExcluded(r.category); });
+    var subPaid = monthRecs.filter(function (r) { return subSet[r.item]; });
+    var subPaidSum = subPaid.reduce(function (a, r) { return a + total(r); }, 0);
     var spent = counted.reduce(function (a, r) { return a + total(r); }, 0);
     var exSum = excluded.reduce(function (a, r) { return a + total(r); }, 0);
     var pending = counted.filter(function (r) { return r.twd == null && total(r); });
@@ -566,17 +576,23 @@
     });
     html += '<div class="brk minus"><span class="brk-n">分期扣款<small>' + db.installments.length + ' 筆，剩餘本金 ' + money(installRemaining()) + '</small></span>' +
       '<span class="brk-v">− ' + money(im) + '</span></div>';
+    var sm = subMonthly();
+    if (sm > 0) {
+      var subAct = db.subs.filter(function (s) { return s.active; });
+      var subMonCnt = subAct.filter(function (s) { return s.cycle !== 'year'; }).length;
+      var subYrCnt  = subAct.filter(function (s) { return s.cycle === 'year'; }).length;
+      var subDesc = (subMonCnt ? subMonCnt + ' 個月費' : '') + (subMonCnt && subYrCnt ? '＋' : '') + (subYrCnt ? subYrCnt + ' 個年費月攤' : '');
+      html += '<div class="brk minus"><span class="brk-n">訂閱費（預扣）<small>' + subDesc + '；已付帳單不重複計</small></span>' +
+        '<span class="brk-v">− ' + money(sm) + '</span></div>';
+    }
     if (num(b.savings) > 0) {
       html += '<div class="brk minus"><span class="brk-n">存起來</span><span class="brk-v">− ' + money(num(b.savings)) + '</span></div>';
     }
     html += '<div class="brk tot"><span class="brk-n">可自由支配</span><span class="brk-v">' + money(disposable()) + '</span></div>';
-    var sm = subMonthly();
-    if (sm > 0) {
-      html += '<div class="brk" style="border-bottom:0;opacity:.85"><span class="brk-n">其中訂閱已佔用' +
-        '<small>' + db.subs.filter(function (s) { return s.active; }).length + ' 個生效中，含年費月攤</small></span>' +
-        '<span class="brk-v">' + money(sm) + '</span></div>' +
-        '<div class="brk" style="border-bottom:0;padding-top:0"><span class="brk-n"><b>真正彈性的錢</b></span>' +
-        '<span class="brk-v"><b>' + money(disposable() - sm) + '</b></span></div>';
+    if (subPaidSum > 0) {
+      html += '<div class="brk" style="border-bottom:0;opacity:.75;font-size:.82rem">' +
+        '<span class="brk-n">本月已付訂閱 ' + subPaid.length + ' 筆（預扣內不重複計入已花）</span>' +
+        '<span class="brk-v">' + money(subPaidSum) + '</span></div>';
     }
     $('#budgetBreakdown').innerHTML = html;
 
