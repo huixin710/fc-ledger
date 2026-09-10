@@ -62,29 +62,6 @@
 .lock-err{color:var(--danger);min-height:1.4em;font-size:.85rem;margin:.75rem 0 0;}
 .lock-hint{font-size:.78rem;color:var(--muted);margin:.5rem 0 0;}
 
-/* ── 卡片權益頁 ── */
-.cat-filters{display:flex;flex-wrap:wrap;gap:6px;}
-.cat-btn{padding:5px 14px;border-radius:999px;border:1.5px solid var(--line);background:var(--surface);color:var(--text);font-size:.8rem;cursor:pointer;transition:all .15s;}
-.cat-btn.active{background:var(--accent);border-color:var(--accent);color:#fff;}
-#cardBenefitsGrid{display:grid;grid-template-columns:1fr;gap:12px;padding:0 1rem 1rem;}
-@media(min-width:640px){#cardBenefitsGrid{grid-template-columns:1fr 1fr;}}
-@media(min-width:1280px){#cardBenefitsGrid{grid-template-columns:1fr 1fr 1fr;}}
-.cb-card{border-radius:var(--radius);overflow:hidden;background:var(--surface);box-shadow:var(--shadow);transition:opacity .2s;}
-.cb-card.dimmed{opacity:.28;}
-.cb-header{padding:12px 14px;color:#fff;}
-.cb-card-name{font-size:.95rem;font-weight:600;}
-.cb-card-meta{font-size:.76rem;opacity:.85;margin-top:2px;}
-.cb-body{padding:10px 14px 12px;}
-.cb-benefit{display:flex;align-items:flex-start;gap:8px;padding:5px 0;border-bottom:1px solid var(--line);}
-.cb-benefit:last-of-type{border-bottom:none;}
-.cb-rate{font-size:1rem;font-weight:700;color:var(--accent);min-width:46px;padding-top:1px;}
-.cb-rate.top{color:var(--ok);}
-.cb-label{font-size:.82rem;color:var(--text);flex:1;line-height:1.4;}
-.cb-reward{font-size:.72rem;color:var(--muted);white-space:nowrap;padding-top:2px;}
-.cb-tags{display:flex;flex-wrap:wrap;gap:4px;margin-top:10px;}
-.cb-tag{font-size:.72rem;padding:2px 9px;border-radius:999px;background:var(--accent-soft);color:var(--accent);}
-.cb-tag.active{background:var(--accent);color:#fff;}
-.cb-note{font-size:.75rem;color:var(--muted);margin:8px 0 0;line-height:1.5;}
 html{-webkit-text-size-adjust:100%}
 body{
   margin:0;

@@ -12,7 +12,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="FC 記帳本">
-<link rel="stylesheet" href="styles.css?v=2.6.0">
+<link rel="stylesheet" href="styles.css?v=2.6.1">
 </head>
 <body>
 
@@ -148,17 +148,6 @@
       <p class="hint">消費日已經早於結帳日，帳單上應該找得到了。點進去把入帳日（和本幣）補上，這裡就會清掉。</p>
       <div id="pendDate"></div>
     </div>
-  </section>
-
-  <!-- ═══════════ 卡片權益 ═══════════ -->
-  <section class="view" id="view-cards" hidden>
-    <div class="card">
-      <h2 class="card-h">今天刷什麼類別？</h2>
-      <p class="hint">選一個消費類別，推薦的卡片會往前排。</p>
-      <div class="cat-filters" id="catFilters"></div>
-    </div>
-    <div id="cardBenefitsGrid"></div>
-    <p class="hint" style="padding:0 1rem 1.5rem">⚠ 以上資訊僅供參考，回饋條件隨時可能調整，請以各銀行官網為準。</p>
   </section>
 
   <!-- ═══════════ 設定 ═══════════ -->
@@ -401,13 +390,12 @@
   <button class="tab" data-tab="budget" type="button"><span>🎯</span>預算</button>
   <button class="tab" data-tab="list" type="button"><span>🧾</span>明細</button>
   <button class="tab" data-tab="pending" type="button"><span>💳</span>帳單<i class="tab-badge" id="pendBadge" hidden></i></button>
-  <button class="tab" data-tab="cards" type="button"><span>🃏</span>卡片</button>
   <button class="tab" data-tab="settings" type="button"><span>⚙️</span>設定</button>
 </nav>
 
 <div class="toast" id="toast" hidden></div>
 
-<script src="seed.js?v=2.6.0"></script>
-<script src="app.js?v=2.6.0"></script>
+<script src="seed.js?v=2.6.1"></script>
+<script src="app.js?v=2.6.1"></script>
 </body>
 </html>
