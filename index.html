@@ -1,385 +1,391 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>FC 記帳??/title>
-<meta name="description" content="粉絲俱�??��??�活消費?��?帳、�?算�??��?追蹤">
+<title>FC 記帳本</title>
+<meta name="description" content="粉絲俱樂部與生活消費的記帳、預算與分期追蹤">
 <meta name="theme-color" content="#7c4dff">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="FC 記帳??>
+<meta name="apple-mobile-web-app-title" content="FC 記帳本">
 <link rel="stylesheet" href="styles.css?v=2.6.0">
 </head>
 <body>
 
-<!-- ?��??��??��??��??��???密碼?�畫???��??��??��??��??��???-->
+<!-- ═══════════ 密碼鎖畫面 ═══════════ -->
 <div id="lockScreen" class="lock-screen" hidden>
   <div class="lock-box">
-    <div class="lock-icon-lg">??</div>
-    <h2 class="lock-title">FC 記帳??/h2>
+    <div class="lock-icon-lg">🔒</div>
+    <h2 class="lock-title">FC 記帳本</h2>
     <input type="password" id="lockPin" inputmode="numeric" maxlength="8"
            placeholder="輸入密碼" autocomplete="current-password">
     <p class="lock-err" id="lockMsg"></p>
-    <p class="lock-hint">??Enter 確�?</p>
+    <p class="lock-hint">按 Enter 確認</p>
   </div>
 </div>
 
 <header class="topbar">
   <div class="topbar-main">
-    <h1 class="brand">FC 記帳??/h1>
-    <button id="themeBtn" class="icon-btn" type="button" aria-label="?��?深淺??>??</button>
+    <h1 class="brand">FC 記帳本</h1>
+    <button id="themeBtn" class="icon-btn" type="button" aria-label="切換深淺色">🌓</button>
   </div>
   <nav class="period" id="periodBar">
-    <button class="per-nav" id="prevPeriod" type="button" aria-label="上�???>??/button>
-    <button class="per-label" id="periodLabel" type="button">載入中�?/button>
-    <button class="per-nav" id="nextPeriod" type="button" aria-label="下�???>??/button>
+    <button class="per-nav" id="prevPeriod" type="button" aria-label="上一期">‹</button>
+    <button class="per-label" id="periodLabel" type="button">載入中…</button>
+    <button class="per-nav" id="nextPeriod" type="button" aria-label="下一期">›</button>
   </nav>
 </header>
 
 <main id="main">
 
-  <!-- ?��??��??��??��??��???總覽 ?��??��??��??��??��???-->
+  <!-- ═══════════ 總覽 ═══════════ -->
   <section class="view" id="view-dash">
     <div class="stat-grid">
       <div class="stat stat-hero">
-        <span class="stat-k">?��?總支??/span>
-        <span class="stat-v" id="sumTotal">??/span>
-        <span class="stat-sub" id="sumSub">??/span>
+        <span class="stat-k">本期總支出</span>
+        <span class="stat-v" id="sumTotal">—</span>
+        <span class="stat-sub" id="sumSub">—</span>
       </div>
-      <div class="stat"><span class="stat-k">筆數</span><span class="stat-v sm" id="sumCount">??/span></div>
-      <div class="stat"><span class="stat-k">?��?�?/span><span class="stat-v sm" id="sumFee">??/span></div>
-      <div class="stat"><span class="stat-k">平�??��?</span><span class="stat-v sm" id="sumAvg">??/span></div>
-      <div class="stat"><span class="stat-k">?�大單�?/span><span class="stat-v sm" id="sumMax">??/span></div>
+      <div class="stat"><span class="stat-k">筆數</span><span class="stat-v sm" id="sumCount">—</span></div>
+      <div class="stat"><span class="stat-k">手續費</span><span class="stat-v sm" id="sumFee">—</span></div>
+      <div class="stat"><span class="stat-k">平均單筆</span><span class="stat-v sm" id="sumAvg">—</span></div>
+      <div class="stat"><span class="stat-k">最大單筆</span><span class="stat-v sm" id="sumMax">—</span></div>
     </div>
 
-    <div class="card"><h2 class="card-h">每�??�出</h2><div id="chartMonth" class="chart-wrap"></div></div>
+    <div class="card"><h2 class="card-h">每月支出</h2><div id="chartMonth" class="chart-wrap"></div></div>
 
     <div class="card">
-      <h2 class="card-h">?��?佔�?</h2>
+      <h2 class="card-h">分類佔比</h2>
       <div class="donut-row"><div id="chartCat" class="donut-wrap"></div><ul id="legendCat" class="legend"></ul></div>
     </div>
 
-    <div class="card"><h2 class="card-h">依信?�卡</h2><div id="chartCard" class="chart-wrap"></div></div>
-    <div class="card"><h2 class="card-h">依�?�?/ ?��?</h2><div id="chartArtist" class="chart-wrap"></div></div>
-    <div class="card"><h2 class="card-h">依幣??/h2><div id="tblCurrency"></div></div>
-    <div class="card"><h2 class="card-h">?��??�大�? 8 �?/h2><div id="topSpend"></div></div>
+    <div class="card"><h2 class="card-h">依信用卡</h2><div id="chartCard" class="chart-wrap"></div></div>
+    <div class="card"><h2 class="card-h">依藝人 / 團體</h2><div id="chartArtist" class="chart-wrap"></div></div>
+    <div class="card"><h2 class="card-h">依幣別</h2><div id="tblCurrency"></div></div>
+    <div class="card"><h2 class="card-h">單筆最大的 8 筆</h2><div id="topSpend"></div></div>
   </section>
 
-  <!-- ?��??��??��??��??��????��? ?��??��??��??��??��???-->
+  <!-- ═══════════ 預算 ═══════════ -->
   <section class="view" id="view-budget" hidden>
     <div class="budget-hero" id="budgetHero"></div>
 
     <div class="card">
-      <h2 class="card-h">?�個�??�錢?�麼??/h2>
+      <h2 class="card-h">這個月的錢怎麼分</h2>
       <div id="budgetBreakdown"></div>
-      <button class="btn btn-ghost btn-sm wide" id="editBudget" type="button">調整?�入?�固定支??/button>
+      <button class="btn btn-ghost btn-sm wide" id="editBudget" type="button">調整收入與固定支出</button>
     </div>
 
     <div class="card">
-      <h2 class="card-h">?��??�繳�?/h2>
-      <p class="hint">?��??��??��?一定�?被扣?�錢，�?以�?從薪水扣?��??��??��?算「可以花?�」�?/p>
+      <h2 class="card-h">分期未繳完</h2>
+      <p class="hint">分期是每個月一定會被扣的錢，所以先從薪水扣掉，剩下的才算「可以花的」。</p>
       <div id="installList"></div>
     </div>
 
     <div class="card">
-      <h2 class="card-h">訂閱續�??��?</h2>
+      <h2 class="card-h">訂閱續訂提醒</h2>
       <div id="dueList"></div>
     </div>
 
     <div class="card">
-      <h2 class="card-h">訂閱一�?/h2>
-      <p class="hint">?��?中�??�在上面?�已?��??�灰?��??��??�。�??�未??��?�表示帳?��??��??�現?��??�目??/p>
+      <h2 class="card-h">訂閱一覽</h2>
+      <p class="hint">生效中的排在上面、已停訂的灰掉排在下面。標「未扣款」表示帳單上還沒出現同名項目。</p>
       <div id="subList"></div>
     </div>
 
     <div class="card">
-      <h2 class="card-h">?��??��??�費</h2>
+      <h2 class="card-h">本期分類花費</h2>
       <div id="catBudget"></div>
     </div>
   </section>
 
-  <!-- ?��??��??��??��??��????�細 ?��??��??��??��??��???-->
+  <!-- ═══════════ 明細 ═══════════ -->
   <section class="view" id="view-list" hidden>
     <div class="filters">
-      <input type="search" id="q" placeholder="?��??�目?��?註、卡?��? autocomplete="off">
+      <input type="search" id="q" placeholder="搜尋項目、備註、卡號…" autocomplete="off">
       <div class="filter-row">
-        <select id="fCategory"><option value="">?�部?��?</option></select>
-        <select id="fCard"><option value="">?�部?�別</option></select>
-        <select id="fCurrency"><option value="">?�部�?��</option></select>
-        <select id="fArtist"><option value="">?�部?�人</option></select>
-        <select id="fBill"><option value="">?�部帳單??/option></select>
+        <select id="fCategory"><option value="">全部分類</option></select>
+        <select id="fCard"><option value="">全部卡別</option></select>
+        <select id="fCurrency"><option value="">全部幣別</option></select>
+        <select id="fArtist"><option value="">全部藝人</option></select>
+        <select id="fBill"><option value="">全部帳單期</option></select>
         <select id="sortBy">
-          <option value="date-desc">消費????/option>
-          <option value="date-asc">消費????/option>
-          <option value="twd-desc">?��? ??/option>
-          <option value="twd-asc">?��? ??/option>
+          <option value="date-desc">消費日 ↓</option>
+          <option value="date-asc">消費日 ↑</option>
+          <option value="twd-desc">金額 ↓</option>
+          <option value="twd-asc">金額 ↑</option>
         </select>
       </div>
-      <label class="chk"><input type="checkbox" id="allPeriods"> 顯示?�?��??��?忽略上方?�份�?/label>
+      <label class="chk"><input type="checkbox" id="allPeriods"> 顯示所有期間（忽略上方月份）</label>
     </div>
     <div class="list-total" id="listTotal"></div>
     <div id="records"></div>
   </section>
 
-  <!-- ?��??��??��??��??��???帳單 ?��??��??��??��??��???-->
+  <!-- ═══════════ 帳單 ═══════════ -->
   <section class="view" id="view-pending" hidden>
     <div class="budget-hero" id="pendHero"></div>
 
     <div class="card">
-      <h2 class="card-h">?�卡結帳??/h2>
-      <p class="hint">一筆�?費�???b>?�帳??/b>?�在結帳?��??��?，�??��?它進哪一?�帳?��?        結帳?��?後刷?��??��?帳單上�??��?，�??��??��???/p>
+      <h2 class="card-h">各卡結帳日</h2>
+      <p class="hint">一筆消費要看<b>入帳日</b>落在結帳日前還後，才知道它進哪一期帳單。
+        結帳日之後刷的，這期帳單上不會有，下期才會來。</p>
       <div id="cardCycles"></div>
     </div>
 
     <div class="card">
-      <h2 class="card-h">?�出�???結帳後�??��?</h2>
-      <p class="hint">?��??�出?�在下�??�帳?�。本�??沒填?��?外幣?�歷?�平?�匯?�估（顯示�? <b>~?��?</b>）�?        ?�幣?�接?��?�??額�??�以�?算已經�??�去了�?/p>
+      <h2 class="card-h">未出帳 — 結帳後才刷的</h2>
+      <p class="hint">這些會出現在下一期帳單。本幣還沒填的，外幣用歷史平均匯率估（顯示成 <b>~金額</b>）、
+        台幣直接用原幣金額，所以預算已經算進去了。</p>
       <div id="pendAmount"></div>
     </div>
 
     <div class="card">
-      <h2 class="card-h">待�?�????��?已出帳�?沒填?�帳??/h2>
-      <p class="hint">消費?�已經早?��?帳日，帳?��??�該?��??��??��??�去?�入帳日（�??�幣）�?上�??�裡就�?清�???/p>
+      <h2 class="card-h">待對帳 — 照理已出帳但沒填入帳日</h2>
+      <p class="hint">消費日已經早於結帳日，帳單上應該找得到了。點進去把入帳日（和本幣）補上，這裡就會清掉。</p>
       <div id="pendDate"></div>
     </div>
   </section>
 
-  <!-- ?��??��??��??��??��????��?權�? ?��??��??��??��??��???-->
+  <!-- ═══════════ 卡片權益 ═══════════ -->
   <section class="view" id="view-cards" hidden>
     <div class="card">
-      <h2 class="card-h">今天?��?麼�??��?</h2>
-      <p class="hint">?��??��?費�??��??�薦?�卡?��?往?��???/p>
+      <h2 class="card-h">今天刷什麼類別？</h2>
+      <p class="hint">選一個消費類別，推薦的卡片會往前排。</p>
       <div class="cat-filters" id="catFilters"></div>
     </div>
     <div id="cardBenefitsGrid"></div>
-    <p class="hint" style="padding:0 1rem 1.5rem">??以�?資�??��??�考�??��?條件?��??�能調整，�?以�??�行�?網為準�?/p>
+    <p class="hint" style="padding:0 1rem 1.5rem">⚠ 以上資訊僅供參考，回饋條件隨時可能調整，請以各銀行官網為準。</p>
   </section>
 
-  <!-- ?��??��??��??��??��???設�? ?��??��??��??��??��???-->
+  <!-- ═══════════ 設定 ═══════════ -->
   <section class="view" id="view-settings" hidden>
     <div class="card">
-      <h2 class="card-h">貼�?帳單，�?次匯??/h2>
-      <p class="hint">從網?�?�帳??PDF ?��?細那幾�??�接複製貼�?（Ctrl/??A ?�選?��?也可以�?�?        程�??�自?��??��??��??�、�?額。繳款那幾�??�自?�略?��?/p>
+      <h2 class="card-h">貼上帳單，一次匯入</h2>
+      <p class="hint">從網銀或帳單 PDF 把明細那幾行直接複製貼上（Ctrl/⌘+A 全選整塊也可以），
+        程式會自動抓日期、店名、金額。繳款那幾行會自動略過。</p>
       <div class="fld-2">
-        <label class="fld"><span>?�批要�??�哪張卡</span><select id="pasteCard"></select></label>
-        <label class="fld"><span>?�設?��?</span><select id="pasteCat"></select></label>
+        <label class="fld"><span>這批要記到哪張卡</span><select id="pasteCard"></select></label>
+        <label class="fld"><span>預設分類</span><select id="pasteCat"></select></label>
       </div>
-      <label class="fld"><span>帳單?��?</span>
+      <label class="fld"><span>帳單格式</span>
         <select id="pasteFormat">
-          <option value="std">一?��?消費?�在?�、台�??額�??�在店�?後�??�新?��?泰、寰宇…�?</option>
-          <option value="union">?�邦：入帳日?�在消費?��??�、台�??額在?��??��?/option>
+          <option value="std">一般：消費日在前、台幣金額緊接在店名後（台新、國泰、寰宇…）</option>
+          <option value="union">聯邦：入帳日印在消費日前面、台幣金額在整行最後</option>
         </select>
       </label>
-      <textarea id="pasteBox" class="paste-box" rows="6" placeholder="115/08/10&#9;115/08/11&#9;SP NATORIUM STOREMINATO&#9;2,093&#10;08/22&#9;08/26&#9;統�??�代?�貨?��?�?#9;3,490"></textarea>
+      <textarea id="pasteBox" class="paste-box" rows="6" placeholder="115/08/10&#9;115/08/11&#9;SP NATORIUM STOREMINATO&#9;2,093&#10;08/22&#9;08/26&#9;統一時代百貨台北店&#9;3,490"></textarea>
       <div class="btn-row">
-        <button class="btn btn-ghost" id="pastePreview" type="button">�???��?</button>
-        <button class="btn" id="pasteCommit" type="button" disabled>?�入?��?紀??/button>
+        <button class="btn btn-ghost" id="pastePreview" type="button">解析看看</button>
+        <button class="btn" id="pasteCommit" type="button" disabled>加入這些紀錄</button>
       </div>
       <div id="pasteResult"></div>
     </div>
 
     <div class="card">
-      <h2 class="card-h">???�端?�步（GitHub Gist�?/h2>
-      <p class="hint">設�?後�?次儲存�??��??��??��?份到你�?<b>私人 GitHub Gist</b>（�?對�??��?）。�?機�??�腦?��?一??Token 就能互相?�步??/p>
+      <h2 class="card-h">☁ 雲端同步（GitHub Gist）</h2>
+      <p class="hint">設定後每次儲存會自動把資料備份到你的<b>私人 GitHub Gist</b>（不對外公開）。手機和電腦用同一個 Token 就能互相同步。</p>
       <label class="fld"><span>GitHub Personal Access Token</span>
-        <input type="password" id="syncToken" autocomplete="off" placeholder="ghp_xxxx??>
+        <input type="password" id="syncToken" autocomplete="off" placeholder="ghp_xxxx…">
       </label>
-      <p class="hint">?��??��?�?b>github.com ??Settings ??Developer settings ??Personal access tokens ??Tokens (classic)</b>，建立�??�只??<code>gist</code> ??token 貼�??�可（�???Classic，�???Fine-grained）�?/p>
-      <label class="fld"><span>Gist ID（�?裝置?�填上�??�顯示�? ID�?/span>
-        <input type="text" id="syncGistId" placeholder="第�?次�??��??�自?�填?? autocomplete="off">
+      <p class="hint">取得方式：<b>github.com → Settings → Developer settings → Personal access tokens → Tokens (classic)</b>，建立一個只勾 <code>gist</code> 的 token 貼上即可（要用 Classic，不是 Fine-grained）。</p>
+      <label class="fld"><span>Gist ID（換裝置時填上一台顯示的 ID）</span>
+        <input type="text" id="syncGistId" placeholder="第一次上傳後會自動填入" autocomplete="off">
       </label>
-      <label class="chk"><input type="checkbox" id="syncAuto"> 每次?��??��?上傳</label>
+      <label class="chk"><input type="checkbox" id="syncAuto"> 每次儲存自動上傳</label>
       <div class="btn-row" style="margin-top:10px">
-        <button class="btn" id="syncPush" type="button">??立即上傳</button>
-        <button class="btn btn-ghost" id="syncPull" type="button">�?從雲端�?�?/button>
+        <button class="btn" id="syncPush" type="button">☁ 立即上傳</button>
+        <button class="btn btn-ghost" id="syncPull" type="button">⬇ 從雲端下載</button>
       </div>
       <p class="hint" id="syncStatus" style="margin-top:6px"></p>
     </div>
 
     <div class="card">
-      <h2 class="card-h">資�??�份</h2>
-      <p class="hint">資�??��??�這台裝置?�瀏覽?�裡（�??��??��??��??��??��??�瀏覽?��??��?請�??�出??/p>
+      <h2 class="card-h">資料備份</h2>
+      <p class="hint">資料只存在這台裝置的瀏覽器裡（不會上傳）。換手機或清除瀏覽器資料前請先匯出。</p>
       <div class="btn-row">
-        <button class="btn" id="exportJson" type="button">?�出 JSON ?�份</button>
-        <button class="btn" id="exportCsv" type="button">?�出 CSV（Excel�?/button>
+        <button class="btn" id="exportJson" type="button">匯出 JSON 備份</button>
+        <button class="btn" id="exportCsv" type="button">匯出 CSV（Excel）</button>
       </div>
       <div class="btn-row">
-        <label class="btn btn-ghost" for="importFile">?�入 JSON / CSV �?/label>
+        <label class="btn btn-ghost" for="importFile">匯入 JSON / CSV 檔</label>
         <input type="file" id="importFile" accept=".json,.csv,text/csv,application/json" hidden>
       </div>
       <p class="hint" id="importMsg"></p>
     </div>
 
     <div class="card">
-      <h2 class="card-h">?��?</h2>
+      <h2 class="card-h">分類</h2>
       <div id="catEditor" class="tag-editor"></div>
       <div class="inline-add">
-        <input type="text" id="newCat" placeholder="?��??��???>
-        <button class="btn btn-sm" id="addCat" type="button">?�入</button>
+        <input type="text" id="newCat" placeholder="新增分類…">
+        <button class="btn btn-sm" id="addCat" type="button">加入</button>
       </div>
     </div>
 
     <div class="card">
-      <h2 class="card-h">信用??/h2>
-      <p class="hint">?�稱?�以?�己?��?例�??��?511 ?�」改?�實?��??�行�?稱�???        <b>結帳??/b>??b>繳款??/b>請照實�?帳單填�??�帳?�」那?��??��?消費?�到�?��?��??��?        標「推測」�??��?從入帳日?�推?��?記�?確�???/p>
+      <h2 class="card-h">信用卡</h2>
+      <p class="hint">名稱可以自己改（例如把「4511 卡」改成實際的銀行名稱）。
+        <b>結帳日</b>和<b>繳款日</b>請照實際帳單填，「帳單」那頁才會把消費分到正確的期別。
+        標「推測」的是我從入帳日反推的，記得確認。</p>
       <div id="cardEditor"></div>
       <div class="inline-add">
-        <input type="text" id="newCard" placeholder="?��??�別??>
-        <button class="btn btn-sm" id="addCard" type="button">?�入</button>
+        <input type="text" id="newCard" placeholder="新增卡別…">
+        <button class="btn btn-sm" id="addCard" type="button">加入</button>
       </div>
     </div>
 
     <div class="card">
-      <h2 class="card-h">?? ?�用程�???/h2>
-      <p class="hint">設�?後�?次�???App ?�要輸?��?碼�??�止?�人?�到你�?消費紀?��?/p>
+      <h2 class="card-h">🔒 應用程式鎖</h2>
+      <p class="hint">設定後每次開啟 App 需要輸入密碼，防止別人看到你的消費紀錄。</p>
       <div id="pinStatus"></div>
       <div id="pinSetForm" hidden>
-        <label class="fld"><span>?��?碼�?4?? 位數字�?</span>
-          <input type="password" id="pinNew" inputmode="numeric" maxlength="8" placeholder="例�?1234"></label>
-        <label class="fld"><span>?�輸?��?次確�?/span>
-          <input type="password" id="pinConfirm" inputmode="numeric" maxlength="8" placeholder="?�次輸入"></label>
+        <label class="fld"><span>新密碼（4–8 位數字）</span>
+          <input type="password" id="pinNew" inputmode="numeric" maxlength="8" placeholder="例：1234"></label>
+        <label class="fld"><span>再輸入一次確認</span>
+          <input type="password" id="pinConfirm" inputmode="numeric" maxlength="8" placeholder="再次輸入"></label>
         <div class="btn-row">
-          <button class="btn" id="pinSave" type="button">確�?設�?</button>
-          <button class="btn btn-ghost" id="pinCancel" type="button">?��?</button>
+          <button class="btn" id="pinSave" type="button">確認設定</button>
+          <button class="btn btn-ghost" id="pinCancel" type="button">取消</button>
         </div>
         <p class="hint" id="pinMsg" style="margin-top:6px"></p>
       </div>
       <div class="btn-row" id="pinBtns">
-        <button class="btn btn-ghost" id="pinSetBtn" type="button">設�?密碼</button>
+        <button class="btn btn-ghost" id="pinSetBtn" type="button">設定密碼</button>
         <button class="btn btn-danger" id="pinRemoveBtn" type="button" hidden>移除密碼</button>
-        <button class="btn" id="pinLockNow" type="button" hidden>?? 立即?��?</button>
+        <button class="btn" id="pinLockNow" type="button" hidden>🔒 立即鎖定</button>
       </div>
     </div>
 
     <div class="card">
-      <h2 class="card-h">?�險?��?</h2>
+      <h2 class="card-h">危險操作</h2>
       <div class="btn-row">
-        <button class="btn btn-ghost" id="reseed" type="button">?�新載入帳單?��?資�?</button>
-        <button class="btn btn-danger" id="wipe" type="button">清空?�?��???/button>
+        <button class="btn btn-ghost" id="reseed" type="button">重新載入帳單初始資料</button>
+        <button class="btn btn-danger" id="wipe" type="button">清空所有資料</button>
       </div>
     </div>
 
-    <p class="version">FC 記帳??· ?��??�用 · <span id="verLabel"></span></p>
+    <p class="version">FC 記帳本 · 離線可用 · <span id="verLabel"></span></p>
   </section>
 </main>
 
-<!-- ?��??��??��??��??��???消費編輯 ?��??��??��??��??��???-->
+<!-- ═══════════ 消費編輯 ═══════════ -->
 <div class="sheet" id="sheet" hidden>
   <div class="sheet-inner">
     <div class="sheet-head">
-      <button class="btn-text" id="sheetCancel" type="button">?��?</button>
-      <strong id="sheetTitle">?��?一�?/strong>
-      <button class="btn-text primary" id="sheetSave" type="button">?��?</button>
+      <button class="btn-text" id="sheetCancel" type="button">取消</button>
+      <strong id="sheetTitle">新增一筆</strong>
+      <button class="btn-text primary" id="sheetSave" type="button">儲存</button>
     </div>
     <form id="form" class="form" autocomplete="off">
       <label class="fld">
-        <span>?�目 <b>*</b></span>
-        <input type="text" name="itemName" list="itemList" required placeholder="例�?TAKASE TOYA OFFICIAL FANCLUB ?��?�?>
+        <span>項目 <b>*</b></span>
+        <input type="text" name="itemName" list="itemList" required placeholder="例：TAKASE TOYA OFFICIAL FANCLUB 月額費">
         <datalist id="itemList"></datalist>
       </label>
 
       <div class="fld-2">
-        <label class="fld"><span>消費??<b>*</b></span>
+        <label class="fld"><span>消費日 <b>*</b></span>
           <input type="date" name="date" required><em class="roc" data-roc-for="date"></em></label>
-        <label class="fld"><span>?�帳??/span>
+        <label class="fld"><span>入帳日</span>
           <input type="date" name="postDate"><em class="roc" data-roc-for="postDate"></em></label>
       </div>
 
       <div class="fld-2">
-        <label class="fld"><span>�?��</span>
+        <label class="fld"><span>幣別</span>
           <input type="text" name="currency" list="curList" placeholder="JPY">
           <datalist id="curList">
             <option value="TWD"><option value="JPY"><option value="KRW"><option value="USD"><option value="EUR"><option value="CNY"><option value="HKD">
           </datalist></label>
-        <label class="fld"><span>?�幣?��?</span>
+        <label class="fld"><span>原幣金額</span>
           <input type="number" name="amount" step="0.01" inputmode="decimal" placeholder="1200"></label>
       </div>
 
       <div class="fld-2">
-        <label class="fld"><span>?�幣 TWD</span>
-          <input type="number" name="twd" step="0.01" inputmode="decimal" placeholder="?�入帳可?�空"></label>
-        <label class="fld"><span>?��?�?TWD</span>
+        <label class="fld"><span>本幣 TWD</span>
+          <input type="number" name="twd" step="0.01" inputmode="decimal" placeholder="未入帳可留空"></label>
+        <label class="fld"><span>手續費 TWD</span>
           <input type="number" name="fee" step="0.01" inputmode="decimal" placeholder="4"></label>
       </div>
 
       <p class="rate-hint" id="rateHint"></p>
 
       <div class="fld-2">
-        <label class="fld"><span>?��?</span><select name="category" id="selCategory"></select></label>
-        <label class="fld"><span>?�卡</span><select name="card" id="selCard"></select></label>
+        <label class="fld"><span>分類</span><select name="category" id="selCategory"></select></label>
+        <label class="fld"><span>刷卡</span><select name="card" id="selCard"></select></label>
       </div>
 
-      <label class="fld"><span>?�人 / ?��?</span>
-        <input type="text" name="artist" list="artistList" placeholder="例�?ONE OK ROCK">
+      <label class="fld"><span>藝人 / 團體</span>
+        <input type="text" name="artist" list="artistList" placeholder="例：ONE OK ROCK">
         <datalist id="artistList"></datalist></label>
 
       <div class="fld-2">
-        <label class="fld"><span>?�員?��?</span>
+        <label class="fld"><span>會員卡號</span>
           <input type="text" name="memberId" placeholder="TT000274"></label>
-        <label class="fld"><span>下次付款??/span>
+        <label class="fld"><span>下次付款日</span>
           <input type="date" name="nextDue"><em class="roc" data-roc-for="nextDue"></em></label>
       </div>
 
-      <label class="fld"><span>?�註</span>
-        <textarea name="note" rows="2" placeholder="例�?2026.07.06 ~ 2027.07.06"></textarea></label>
+      <label class="fld"><span>備註</span>
+        <textarea name="note" rows="2" placeholder="例：2026.07.06 ~ 2027.07.06"></textarea></label>
 
-      <button class="btn btn-danger wide" id="deleteRec" type="button" hidden>?�除?��?</button>
+      <button class="btn btn-danger wide" id="deleteRec" type="button" hidden>刪除這筆</button>
       <div class="sheet-pad"></div>
     </form>
   </div>
 </div>
 
-<!-- ?��??��??��??��??��????��?設�? ?��??��??��??��??��???-->
+<!-- ═══════════ 預算設定 ═══════════ -->
 <div class="sheet" id="bSheet" hidden>
   <div class="sheet-inner">
     <div class="sheet-head">
-      <button class="btn-text" id="bCancel" type="button">?��?</button>
-      <strong>?�入?�固定支??/strong>
-      <button class="btn-text primary" id="bSave" type="button">?��?</button>
+      <button class="btn-text" id="bCancel" type="button">取消</button>
+      <strong>收入與固定支出</strong>
+      <button class="btn-text primary" id="bSave" type="button">儲存</button>
     </div>
     <div class="form">
-      <label class="fld"><span>每�?稅�??�入</span>
+      <label class="fld"><span>每月稅後收入</span>
         <input type="number" id="bIncome" inputmode="numeric" placeholder="35000"></label>
-      <label class="fld"><span>每�??��?下�??�扣?��??��??��?算可?��?</span>
+      <label class="fld"><span>每月想存下（先扣掉，剩下的才算可花）</span>
         <input type="number" id="bSavings" inputmode="numeric" placeholder="0"></label>
       <label class="chk"><input type="checkbox" id="bEstimate">
-        待入帳�??�幣?��?填�??�用歷史平�??��?估�?後�??��?�?/label>
+        待入帳（本幣還沒填）的用歷史平均匯率估算後計入預算</label>
 
-      <h3 class="sub-h">每�??��??�出</h3>
+      <h3 class="sub-h">每月固定支出</h3>
       <div id="bFixed"></div>
       <div class="inline-add">
-        <input type="text" id="bNewName" placeholder="?�目，�?：房�?>
-        <input type="number" id="bNewAmt" inputmode="numeric" placeholder="?��?" style="max-width:110px">
-        <button class="btn btn-sm" id="bAdd" type="button">?�入</button>
+        <input type="text" id="bNewName" placeholder="項目，例：房租">
+        <input type="number" id="bNewAmt" inputmode="numeric" placeholder="金額" style="max-width:110px">
+        <button class="btn btn-sm" id="bAdd" type="button">加入</button>
       </div>
 
-      <h3 class="sub-h">?��?（�??�固定扣款�?</h3>
-      <p class="hint">從信?�卡帳單?�「�??�交?��??�到?��?訊」�??��??�繳完�??��??��?就好??/p>
+      <h3 class="sub-h">分期（每月固定扣款）</h3>
+      <p class="hint">從信用卡帳單的「分期交易尚未到期資訊」抄過來。繳完的把它刪掉就好。</p>
       <div id="bInstall"></div>
       <div class="inline-add">
-        <input type="text" id="iNewName" placeholder="?��??�目">
-        <input type="number" id="iNewMonthly" inputmode="numeric" placeholder="?��?" style="max-width:90px">
-        <input type="number" id="iNewRemain" inputmode="numeric" placeholder="?��??��?" style="max-width:110px">
-        <button class="btn btn-sm" id="iAdd" type="button">?�入</button>
+        <input type="text" id="iNewName" placeholder="分期項目">
+        <input type="number" id="iNewMonthly" inputmode="numeric" placeholder="月付" style="max-width:90px">
+        <input type="number" id="iNewRemain" inputmode="numeric" placeholder="剩餘本金" style="max-width:110px">
+        <button class="btn btn-sm" id="iAdd" type="button">加入</button>
       </div>
 
       <h3 class="sub-h">訂閱</h3>
-      <p class="hint">?��??��??�勾?��?（�?保�?歷史紀?��??�是不�??��??��?算進未來估算�?�?        ?��??��???��?�直?�新增就好�?/p>
+      <p class="hint">停訂的把勾勾取消（會保留歷史紀錄，只是不再提醒、不算進未來估算）；
+        剛訂還沒扣款的直接新增就好。</p>
       <div id="bSubs"></div>
       <div class="inline-add">
-        <input type="text" id="sNewName" placeholder="訂閱?�稱">
-        <input type="number" id="sNewAmt" inputmode="numeric" placeholder="?��?" style="max-width:90px">
-        <select id="sNewCycle" style="max-width:76px"><option value="month">??/option><option value="year">�?/option></select>
-        <button class="btn btn-sm" id="sAdd" type="button">?�入</button>
+        <input type="text" id="sNewName" placeholder="訂閱名稱">
+        <input type="number" id="sNewAmt" inputmode="numeric" placeholder="金額" style="max-width:90px">
+        <select id="sNewCycle" style="max-width:76px"><option value="month">月</option><option value="year">年</option></select>
+        <button class="btn btn-sm" id="sAdd" type="button">加入</button>
       </div>
 
-      <h3 class="sub-h">不�??��??��?算�??��?</h3>
-      <p class="hint">年繳保費?�種?�已經在上面?�固定支?��??��??��??��?實�?付款??���?不該?��?一次�?
-        ?��???���??��?起�??�表??/p>
+      <h3 class="sub-h">不計入每月預算的分類</h3>
+      <p class="hint">年繳保費這種「已經在上面用固定支出預留過」的錢，實際付款那個月不該再算一次，
+        否則那個月會看起來爆表。</p>
       <div id="bExclude" class="tag-editor"></div>
 
       <div class="sheet-pad"></div>
@@ -387,16 +393,16 @@
   </div>
 </div>
 
-<button class="fab" id="fab" type="button" aria-label="?��?一�?>�?/button>
+<button class="fab" id="fab" type="button" aria-label="新增一筆">＋</button>
 
 <nav class="tabbar">
-  <span class="nav-brand">FC 記帳??/span>
-  <button class="tab is-on" data-tab="dash" type="button"><span>??</span>總覽</button>
-  <button class="tab" data-tab="budget" type="button"><span>?��</span>?��?</button>
-  <button class="tab" data-tab="list" type="button"><span>?��</span>?�細</button>
-  <button class="tab" data-tab="pending" type="button"><span>?��</span>帳單<i class="tab-badge" id="pendBadge" hidden></i></button>
-  <button class="tab" data-tab="cards" type="button"><span>??</span>?��?</button>
-  <button class="tab" data-tab="settings" type="button"><span>?��?</span>設�?</button>
+  <span class="nav-brand">FC 記帳本</span>
+  <button class="tab is-on" data-tab="dash" type="button"><span>📊</span>總覽</button>
+  <button class="tab" data-tab="budget" type="button"><span>🎯</span>預算</button>
+  <button class="tab" data-tab="list" type="button"><span>🧾</span>明細</button>
+  <button class="tab" data-tab="pending" type="button"><span>💳</span>帳單<i class="tab-badge" id="pendBadge" hidden></i></button>
+  <button class="tab" data-tab="cards" type="button"><span>🃏</span>卡片</button>
+  <button class="tab" data-tab="settings" type="button"><span>⚙️</span>設定</button>
 </nav>
 
 <div class="toast" id="toast" hidden></div>
