@@ -1,5 +1,5 @@
 /* 離線快取：改版時把 CACHE 版本號 +1 即可強制更新 */
-var CACHE = 'fc-ledger-v5';
+var CACHE = 'fc-ledger-v6';
 var ASSETS = [
   './',
   './index.html',

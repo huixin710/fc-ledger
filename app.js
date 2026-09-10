@@ -160,8 +160,12 @@
   }
 
   function renderDonut(el, legendEl, rows) {
+    // 負數（回饋折抵）畫不成扇形，但中心要顯示真正的淨額，否則會跟上面的總支出對不起來
+    var credits = rows.filter(function (r) { return r.value < 0; });
+    var creditSum = credits.reduce(function (a, r) { return a + r.value; }, 0);
     rows = rows.filter(function (r) { return r.value > 0; });
     var sum = rows.reduce(function (a, r) { return a + r.value; }, 0);
+    var net = sum + creditSum;
     if (!sum) { el.innerHTML = ''; legendEl.innerHTML = '<li class="empty">沒有資料</li>'; return; }
     var R = 60, C = 2 * Math.PI * R, off = 0, segs = '';
     rows.forEach(function (r, i) {
@@ -173,12 +177,16 @@
     });
     el.innerHTML = '<svg viewBox="0 0 140 140" role="img" aria-label="分類佔比">' + segs +
       '<text x="70" y="66" text-anchor="middle" font-size="10" fill="currentColor" opacity=".6">合計</text>' +
-      '<text x="70" y="82" text-anchor="middle" font-size="16" font-weight="800" fill="currentColor">' + money(sum) + '</text></svg>';
+      '<text x="70" y="82" text-anchor="middle" font-size="16" font-weight="800" fill="currentColor">' + money(net) + '</text></svg>';
     legendEl.innerHTML = rows.map(function (r, i) {
       return '<li><span class="dot" style="background:' + color(i) + '"></span>' +
         '<span class="lg-name">' + esc(r.name) + '</span>' +
         '<span class="lg-val">' + money(r.value) + '　' + ((r.value / sum) * 100).toFixed(0) + '%</span></li>';
-    }).join('');
+    }).join('') +
+      (creditSum ? '<li style="opacity:.7;border-top:1px solid var(--line);margin-top:4px;padding-top:6px">' +
+        '<span class="dot" style="background:var(--ok)"></span>' +
+        '<span class="lg-name">' + credits.map(function (r) { return esc(r.name); }).join('、') + '</span>' +
+        '<span class="lg-val">' + money(creditSum) + '</span></li>' : '');
   }
 
   function renderMonthChart(el) {
