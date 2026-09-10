@@ -4,7 +4,7 @@
 
   var STORE_KEY = 'fcLedger.v1';
   var THEME_KEY = 'fcLedger.theme';
-  var VERSION = '2.6.1';
+  var VERSION = '2.6.2';
   var PALETTE = ['--c1','--c2','--c3','--c4','--c5','--c6','--c7','--c8','--c9'];
 
   /* ─────────────── 小工具 ─────────────── */
@@ -98,6 +98,42 @@
     }
     seed();
   }
+  var CARD_RENAME = {
+    '台新Richart 3208':      '台新 Richart JCB 3208',
+    '台新Richart 0602':      '台新 Richart Visa 0602',
+    '台新Richart 6209':      '台新 Richart 萬事達 6209',
+    '寰宇卡 2007':           '新光寰宇 Visa 2007',
+    '國泰CUBE 3624':         '國泰 CUBE Visa 3624',
+    '國泰CUBE 2225':         '國泰蝦皮萬事達 2225',
+    '聯邦M悠遊鈔 0206':      '聯邦 M 卡萬事達 0206',
+    '聯邦賴點卡 9908':        '聯邦幫賴點卡 Visa 9908',
+    'LINE Bank 1308':         '聯邦 LINE Bank Visa 1308',
+    '4511 卡':               '中信 All Me 萬事達 4511',
+    '6357 卡':               '中信 LINE Pay JCB 6357',
+    '富邦MASTER 6848':       '富邦 momo 卡萬事達 6848',
+    '富邦MASTER 0969':       '富邦 Costco 萬事達 0969'
+  };
+  function migrateCardNames() {
+    var changed = false;
+    db.cards = db.cards.map(function(c) {
+      var n = CARD_RENAME[c];
+      if (n) { changed = true; return n; }
+      return c;
+    });
+    db.records.forEach(function(r) {
+      var n = CARD_RENAME[r.card];
+      if (n) { r.card = n; changed = true; }
+    });
+    Object.keys(CARD_RENAME).forEach(function(old) {
+      if (db.cardMeta && db.cardMeta[old]) {
+        db.cardMeta[CARD_RENAME[old]] = db.cardMeta[old];
+        delete db.cardMeta[old];
+        changed = true;
+      }
+    });
+    if (changed) save();
+  }
+
   function seed() {
     db.records = window.SEED.records.map(function (r) { var c = clone(r); c.id = uid(); return c; });
     db.categories = window.SEED.categories.slice();
@@ -1574,6 +1610,7 @@
   /* ─────────────── 啟動 ─────────────── */
   initTheme();
   load();
+  migrateCardNames();
 
   var latest = db.records.map(function (r) { return r.date; }).filter(Boolean).sort().pop();
   if (latest && latest < ymOf(todayISO()) + '-01') { ui.ym = ymOf(latest); ui.year = latest.slice(0, 4); }
