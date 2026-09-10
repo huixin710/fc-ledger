@@ -1946,6 +1946,7 @@ window.SEED = {
   ],
   "excludeCats": [
    "稅費保險"
-  ]
+  ],
+  "estimatePending": true
  }
 };

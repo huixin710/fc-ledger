@@ -4,7 +4,7 @@
 
   var STORE_KEY = 'fcLedger.v1';
   var THEME_KEY = 'fcLedger.theme';
-  var VERSION = '2.1.0';
+  var VERSION = '2.2.0';
   var PALETTE = ['--c1','--c2','--c3','--c4','--c5','--c6','--c7','--c8','--c9'];
 
   /* ─────────────── 小工具 ─────────────── */
@@ -90,6 +90,7 @@
         db.subs = Array.isArray(d.subs) ? d.subs : clone(window.SEED.subs);
         db.budget = d.budget || defaultBudget();
         if (!db.budget.excludeCats) db.budget.excludeCats = [];
+        if (db.budget.estimatePending == null) db.budget.estimatePending = true;
         return;
       } catch (e) {}
     }
@@ -110,7 +111,39 @@
   }
 
   /* ─────────────── 計算 ─────────────── */
-  function total(r) { return num(r.twd) + num(r.fee); }
+
+  /* 每個幣別用「自己歷史上實際入帳的紀錄」算出平均匯率與手續費率 */
+  function rates() {
+    var m = {};
+    db.records.forEach(function (r) {
+      if (r.twd == null || !r.currency || !num(r.amount)) return;
+      if (!m[r.currency]) m[r.currency] = { twd: 0, amt: 0, fee: 0 };
+      m[r.currency].twd += num(r.twd);
+      m[r.currency].amt += num(r.amount);
+      m[r.currency].fee += num(r.fee);
+    });
+    return m;
+  }
+
+  /* 待入帳（本幣留空）的用上面那組匯率估一個金額。
+     不估的話預算會看起來比實際寬鬆，等帳單來才發現超支。 */
+  function estimated(r) {
+    if (r.twd != null || !r.currency || !num(r.amount)) return null;
+    var m = rates()[r.currency];
+    if (!m || !m.amt) return null;
+    var rate = m.twd / m.amt;
+    var twd = num(r.amount) * rate;
+    return { twd: twd, fee: m.twd ? twd * (m.fee / m.twd) : 0, rate: rate };
+  }
+
+  function total(r) {
+    if (r.twd == null) {
+      if (db.budget && db.budget.estimatePending === false) return 0;
+      var e = estimated(r);
+      return e ? e.twd + e.fee : 0;
+    }
+    return num(r.twd) + num(r.fee);
+  }
 
   function inPeriod(r) {
     if (ui.mode === 'all') return true;
@@ -289,6 +322,8 @@
     var excluded = monthRecs.filter(function (r) { return isExcluded(r.category); });
     var spent = counted.reduce(function (a, r) { return a + total(r); }, 0);
     var exSum = excluded.reduce(function (a, r) { return a + total(r); }, 0);
+    var pending = counted.filter(function (r) { return r.twd == null && total(r); });
+    var pendSum = pending.reduce(function (a, r) { return a + total(r); }, 0);
     var cap = disposable();
     var left = cap - spent;
     var pct = cap > 0 ? Math.min(100, (spent / cap) * 100) : 100;
@@ -311,6 +346,8 @@
       '<div class="bh-bar"><i style="width:' + pct.toFixed(1) + '%"></i></div>' +
       '<div class="bh-foot"><span>已用 ' + (cap > 0 ? Math.round((spent / cap) * 100) : 0) + '%</span>' +
         '<span>' + money(spent) + ' / ' + money(cap) + '</span></div>' +
+      (pendSum ? '<div class="bh-note">已含 ' + pending.length + ' 筆待入帳的估算 ~' + money(pendSum) +
+        '（用你歷史上的平均匯率推算，帳單來了補上實際金額就會自動更正）</div>' : '') +
       (exSum ? '<div class="bh-note">另有 ' + money(exSum) + ' 的 ' + (b.excludeCats || []).join('、') +
         '，已在固定支出預留，不重複計入</div>' : '');
 
@@ -521,14 +558,18 @@
       if (!r.postDate) meta.push('<span class="pill">未入帳</span>');
       if (r.memberId) meta.push('#' + esc(r.memberId));
       var t = total(r);
+      var est = (r.twd == null && t) ? estimated(r) : null;   // 關掉估算時就不要再印匯率
+      // 估算值前面加 ~，不要讓它看起來像已經確定的金額
+      var amtTxt = r.twd == null ? (t ? '~' + money(t) : '待入帳') : money(t);
 
       html += '<button class="rec" type="button" data-id="' + r.id + '">' +
         '<span class="rec-chip" style="background:' + color(ci) + '">' + esc((r.category || '其他').slice(0, 3)) + '</span>' +
         '<span class="rec-body"><span class="rec-title">' + esc(r.item || '(未命名)') + '</span>' +
           '<span class="rec-meta">' + meta.join('<span>·</span>') + '</span></span>' +
         '<span class="rec-amt"><span class="rec-twd' + (r.twd == null ? ' pending' : (t < 0 ? ' credit' : '')) + '">' +
-          (r.twd == null ? '待入帳' : money(t)) + '</span><br>' +
+          amtTxt + '</span><br>' +
           '<span class="rec-orig">' + (r.currency && r.currency !== 'TWD' ? esc(r.currency) + ' ' + money2(num(r.amount)) : '') +
+          (est ? '<br>估算 @' + est.rate.toFixed(4) : '') +
           (num(r.fee) ? '<br>費 ' + money2(num(r.fee)) : '') + '</span></span></button>';
     });
     $('#records').innerHTML = html;
@@ -748,6 +789,7 @@
     var b = db.budget;
     $('#bIncome').value = b.income || '';
     $('#bSavings').value = b.savings || '';
+    $('#bEstimate').checked = b.estimatePending !== false;
     drawFixed(); drawInstall(); drawSubs(); drawExclude();
     $('#bSheet').hidden = false;
     document.body.style.overflow = 'hidden';
@@ -1046,6 +1088,7 @@
     $('#bSave').onclick = function () {
       db.budget.income = num($('#bIncome').value);
       db.budget.savings = num($('#bSavings').value);
+      db.budget.estimatePending = $('#bEstimate').checked;
       save(); $('#bSheet').hidden = true; document.body.style.overflow = '';
       renderAll(); toast('預算已更新');
     };
