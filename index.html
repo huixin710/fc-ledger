@@ -12,7 +12,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="FC 記帳本">
-<link rel="stylesheet" href="styles.css?v=2.4.0">
+<link rel="stylesheet" href="styles.css?v=2.5.0">
 </head>
 <body>
 
@@ -160,6 +160,21 @@
         <button class="btn" id="pasteCommit" type="button" disabled>加入這些紀錄</button>
       </div>
       <div id="pasteResult"></div>
+    </div>
+
+    <div class="card">
+      <h2 class="card-h">☁ 雲端同步（GitHub Gist）</h2>
+      <p class="hint">設定後每次儲存會自動把資料備份到你的<b>私人 GitHub Gist</b>（不對外公開）。手機和電腦用同一個 Token 就能互相同步。</p>
+      <label class="fld"><span>GitHub Personal Access Token</span>
+        <input type="password" id="syncToken" autocomplete="off" placeholder="ghp_xxxx…">
+      </label>
+      <p class="hint">取得方式：<b>github.com → Settings → Developer settings → Personal access tokens → Tokens (classic)</b>，建立一個只勾 <code>gist</code> 的 token 貼上即可。</p>
+      <label class="chk"><input type="checkbox" id="syncAuto"> 每次儲存自動上傳</label>
+      <div class="btn-row" style="margin-top:10px">
+        <button class="btn" id="syncPush" type="button">☁ 立即上傳</button>
+        <button class="btn btn-ghost" id="syncPull" type="button">⬇ 從雲端下載</button>
+      </div>
+      <p class="hint" id="syncStatus" style="margin-top:6px"></p>
     </div>
 
     <div class="card">
@@ -343,7 +358,7 @@
 
 <div class="toast" id="toast" hidden></div>
 
-<script src="seed.js?v=2.4.0"></script>
-<script src="app.js?v=2.4.0"></script>
+<script src="seed.js?v=2.5.0"></script>
+<script src="app.js?v=2.5.0"></script>
 </body>
 </html>

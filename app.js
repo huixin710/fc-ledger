@@ -4,7 +4,7 @@
 
   var STORE_KEY = 'fcLedger.v1';
   var THEME_KEY = 'fcLedger.theme';
-  var VERSION = '2.4.0';
+  var VERSION = '2.5.0';
   var PALETTE = ['--c1','--c2','--c3','--c4','--c5','--c6','--c7','--c8','--c9'];
 
   /* ─────────────── 小工具 ─────────────── */
@@ -111,6 +111,90 @@
   function save() {
     try { localStorage.setItem(STORE_KEY, JSON.stringify(db)); }
     catch (e) { toast('儲存失敗，瀏覽器空間可能已滿'); }
+    if (gistAuto() && gistToken()) syncToGist();
+  }
+
+  /* ─────────────── Gist 雲端同步 ─────────────── */
+  var GIST_TOKEN_KEY = 'fcLedger.gistToken';
+  var GIST_ID_KEY   = 'fcLedger.gistId';
+  var GIST_AUTO_KEY = 'fcLedger.gistAuto';
+  var GIST_FILE     = 'fc-ledger-data.json';
+
+  function gistToken() { try { return localStorage.getItem(GIST_TOKEN_KEY) || ''; } catch(e) { return ''; } }
+  function gistId()    { try { return localStorage.getItem(GIST_ID_KEY)    || ''; } catch(e) { return ''; } }
+  function gistAuto()  { try { return localStorage.getItem(GIST_AUTO_KEY) === '1'; } catch(e) { return false; } }
+
+  function setSyncStatus(msg, ok) {
+    var el = $('#syncStatus');
+    if (!el) return;
+    el.textContent = msg;
+    el.style.color = ok === false ? 'var(--danger)' : (ok ? '#16a34a' : '');
+  }
+
+  function syncToGist() {
+    var token = gistToken();
+    if (!token) { setSyncStatus('請先填入 Personal Access Token', false); return Promise.reject('no token'); }
+    var id = gistId();
+    var payload = JSON.stringify({
+      files: { 'fc-ledger-data.json': { content: JSON.stringify(db) } },
+      description: 'FC 記帳本資料',
+      public: false
+    });
+    setSyncStatus('上傳中…');
+    return fetch(id ? 'https://api.github.com/gists/' + id : 'https://api.github.com/gists', {
+      method: id ? 'PATCH' : 'POST',
+      headers: {
+        'Authorization': 'token ' + token,
+        'Content-Type': 'application/json',
+        'Accept': 'application/vnd.github.v3+json'
+      },
+      body: payload
+    }).then(function(r) {
+      if (!r.ok) return r.text().then(function(t) { throw new Error('HTTP ' + r.status + '：' + t.slice(0,80)); });
+      return r.json();
+    }).then(function(data) {
+      try { localStorage.setItem(GIST_ID_KEY, data.id); } catch(e) {}
+      setSyncStatus('已上傳 ' + new Date().toLocaleTimeString('zh-TW') + '　Gist: ' + data.id.slice(0, 8) + '…', true);
+      toast('☁ 已同步到雲端');
+    }).catch(function(e) {
+      setSyncStatus('上傳失敗：' + e.message, false);
+      toast('同步失敗');
+    });
+  }
+
+  function syncFromGist() {
+    var token = gistToken();
+    var id = gistId();
+    if (!token) { setSyncStatus('請先填入 Personal Access Token', false); return; }
+    if (!id)    { setSyncStatus('尚未上傳過，請先點「立即上傳」建立 Gist', false); return; }
+    setSyncStatus('下載中…');
+    fetch('https://api.github.com/gists/' + id, {
+      headers: { 'Authorization': 'token ' + token, 'Accept': 'application/vnd.github.v3+json' }
+    }).then(function(r) {
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.json();
+    }).then(function(data) {
+      var file = data.files && data.files[GIST_FILE];
+      if (!file) throw new Error('找不到 ' + GIST_FILE);
+      if (file.truncated && file.raw_url) return fetch(file.raw_url).then(function(r) { return r.text(); });
+      return file.content || '';
+    }).then(function(content) {
+      var d = JSON.parse(content);
+      if (!Array.isArray(d.records)) throw new Error('資料格式錯誤');
+      db.records = d.records;
+      if (d.categories && d.categories.length) db.categories = d.categories;
+      if (d.cards && d.cards.length) db.cards = d.cards;
+      if (Array.isArray(d.installments)) db.installments = d.installments;
+      if (Array.isArray(d.subs)) db.subs = d.subs;
+      if (d.cardMeta) db.cardMeta = d.cardMeta;
+      if (d.budget) { db.budget = d.budget; if (!db.budget.excludeCats) db.budget.excludeCats = []; }
+      save(); refreshOptions(); renderAll();
+      setSyncStatus('已從雲端載入 ' + new Date().toLocaleTimeString('zh-TW'), true);
+      toast('⬇ 已從雲端同步');
+    }).catch(function(e) {
+      setSyncStatus('下載失敗：' + e.message, false);
+      toast('下載失敗');
+    });
   }
 
   /* ─────────────── 計算 ─────────────── */
@@ -951,6 +1035,22 @@
       };
     });
     $('#verLabel').textContent = 'v' + VERSION + '　·　' + db.records.length + ' 筆紀錄';
+
+    // 同步面板
+    var tokenEl = $('#syncToken');
+    if (tokenEl) {
+      tokenEl.value = '';
+      tokenEl.placeholder = gistToken() ? 'Token 已設定（貼上新的即可更換）' : 'ghp_xxxx…';
+    }
+    var autoEl = $('#syncAuto');
+    if (autoEl) autoEl.checked = gistAuto();
+    var statusEl = $('#syncStatus');
+    if (statusEl && !statusEl.textContent) {
+      var gid = gistId();
+      statusEl.textContent = gid
+        ? 'Gist ID: ' + gid.slice(0, 8) + '… （已連結）'
+        : (gistToken() ? 'Token 已設定，點「立即上傳」初始化 Gist' : '');
+    }
   }
 
   /* ─────────────── 預算設定表單 ─────────────── */
@@ -1306,6 +1406,32 @@
       pasteDraft = []; $('#pasteBox').value = ''; $('#pasteResult').innerHTML = '';
       $('#pasteCommit').disabled = true;
       renderAll(); toast('已加入 ' + n + ' 筆');
+    };
+
+    // 雲端同步
+    $('#syncToken').addEventListener('change', function () {
+      var v = this.value.trim();
+      try {
+        if (v) {
+          localStorage.setItem(GIST_TOKEN_KEY, v);
+          this.value = '';
+          this.placeholder = 'Token 已設定（貼上新的即可更換）';
+          setSyncStatus('Token 已儲存', true);
+        } else {
+          localStorage.removeItem(GIST_TOKEN_KEY);
+          localStorage.removeItem(GIST_ID_KEY);
+          this.placeholder = 'ghp_xxxx…';
+          setSyncStatus('Token 已清除', false);
+        }
+      } catch(e) {}
+    });
+    $('#syncAuto').addEventListener('change', function () {
+      try { localStorage.setItem(GIST_AUTO_KEY, this.checked ? '1' : '0'); } catch(e) {}
+    });
+    $('#syncPush').onclick = syncToGist;
+    $('#syncPull').onclick = function () {
+      if (!confirm('這會用雲端的資料覆蓋目前裝置上的所有資料，確定嗎？')) return;
+      syncFromGist();
     };
 
     // 備份
