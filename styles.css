@@ -101,6 +101,7 @@ h1,h2,h3{margin:0}
   background:transparent;cursor:pointer;font-size:13px;font-weight:600;color:var(--text);}
 .mp-m:hover{background:var(--accent-soft)}
 .mp-m.is-cur{background:var(--accent);color:#fff;border-color:var(--accent)}
+.mp-m:disabled,.mp-yn:disabled{opacity:.25;cursor:default}
 .per-nav{
   flex:0 0 34px;height:34px;border:1px solid var(--line);background:var(--surface-2);
   border-radius:9px;font-size:19px;line-height:1;cursor:pointer;color:var(--muted);

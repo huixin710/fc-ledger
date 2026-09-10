@@ -4,7 +4,7 @@
 
   var STORE_KEY = 'fcLedger.v1';
   var THEME_KEY = 'fcLedger.theme';
-  var VERSION = '2.8.0';
+  var VERSION = '2.8.1';
   var PALETTE = ['--c1','--c2','--c3','--c4','--c5','--c6','--c7','--c8','--c9'];
 
   /* ─────────────── 小工具 ─────────────── */
@@ -460,32 +460,30 @@
     if (!keys.length) { el.innerHTML = '<p class="empty">沒有資料</p>'; return; }
     var all = [], cur = keys[0] + '-01', last = keys[keys.length - 1] + '-01', guard = 0;
     while (cur <= last && guard++ < 240) { all.push(cur.slice(0, 7)); cur = addMonths(cur, 1); }
-    var show = all; // 顯示所有月份
+    var show = all.slice(-12);
     var cap = disposable();
     var max = Math.max(cap, Math.max.apply(null, show.map(function (k) { return map[k] || 0; }))) || 1;
 
-    var H = 138, pad = 12, BW = 28; // BW = 每欄寬
-    var W = Math.max(320, show.length * BW + pad * 2);
-    var bw = BW, base = H - 22;
+    var W = 320, H = 138, pad = 16, bw = (W - pad * 2) / show.length, base = H - 22;
     var capY = base - (cap / max) * (H - 44);
     var bars = show.map(function (k, i) {
       var v = map[k] || 0;
       var h = Math.max(v ? 3 : 0, (v / max) * (H - 44));
-      var x = pad + i * bw + bw * 0.14, w = bw * 0.72, y = base - h;
+      var x = pad + i * bw + bw * 0.16, w = bw * 0.68, y = base - h;
       var on = (ui.mode === 'month' && k === ui.ym);
       var over = cap > 0 && v > cap;
       return '<g><rect x="' + x.toFixed(1) + '" y="' + y.toFixed(1) + '" width="' + w.toFixed(1) +
         '" height="' + h.toFixed(1) + '" rx="3" fill="' + (over ? 'var(--danger)' : 'var(--c1)') +
         '" opacity="' + (on ? 1 : .45) + '"></rect>' +
-        '<text x="' + (x + w / 2).toFixed(1) + '" y="' + (y - 3).toFixed(1) + '" text-anchor="middle" font-size="7" fill="currentColor" opacity=".75">' +
+        '<text x="' + (x + w / 2).toFixed(1) + '" y="' + (y - 3).toFixed(1) + '" text-anchor="middle" font-size="7.5" fill="currentColor" opacity=".75">' +
         (v ? money(v) : '') + '</text>' +
-        '<text x="' + (x + w / 2).toFixed(1) + '" y="' + (H - 8) + '" text-anchor="middle" font-size="7.5" fill="currentColor" opacity=".55">' +
+        '<text x="' + (x + w / 2).toFixed(1) + '" y="' + (H - 8) + '" text-anchor="middle" font-size="8" fill="currentColor" opacity=".55">' +
         Number(k.slice(5)) + '月</text></g>';
     }).join('');
     var capLine = cap > 0 ? '<line x1="' + pad + '" y1="' + capY.toFixed(1) + '" x2="' + (W - pad) + '" y2="' + capY.toFixed(1) +
       '" stroke="var(--ok)" stroke-width="1" stroke-dasharray="3 3"></line>' +
       '<text x="' + (W - pad) + '" y="' + (capY - 3).toFixed(1) + '" text-anchor="end" font-size="7.5" fill="var(--ok)">可花上限 ' + money(cap) + '</text>' : '';
-    el.innerHTML = '<div style="overflow-x:auto"><svg viewBox="0 0 ' + W + ' ' + H + '" style="width:' + W + 'px;height:' + H + 'px;display:block;min-width:100%" role="img" aria-label="每月支出">' + bars + capLine + '</svg></div>';
+    el.innerHTML = '<svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="每月支出">' + bars + capLine + '</svg>';
   }
 
   /* ─────────────── 總覽 ─────────────── */
@@ -1501,14 +1499,21 @@
 
   /* ─── 月份快速選擇器 ─── */
   var _mpYear = null;
+  var MP_MIN_YEAR = 2023, MP_MIN_MON = 2; // 民國 112/2
+  var MP_MAX_YEAR = new Date().getFullYear() + 1;
   function closeMp() { $('#monthPicker').hidden = true; }
   function renderMpGrid() {
-    $('#mpYearLbl').textContent = '民國 ' + (_mpYear - 1911) + ' 年';
+    var rocYear = _mpYear - 1911;
+    $('#mpYearLbl').textContent = '民國 ' + rocYear + ' 年';
+    $('#mpPrev').disabled = (_mpYear <= MP_MIN_YEAR);
+    $('#mpNext').disabled = (_mpYear >= MP_MAX_YEAR);
     var cur = ui.ym;
     $('#mpGrid').innerHTML = [1,2,3,4,5,6,7,8,9,10,11,12].map(function (m) {
       var ym = _mpYear + '-' + String(m).padStart(2, '0');
+      var disabled = (_mpYear === MP_MIN_YEAR && m < MP_MIN_MON) || (_mpYear > MP_MAX_YEAR);
       var on = ym === cur ? ' is-cur' : '';
-      return '<button class="mp-m' + on + '" data-ym="' + ym + '" type="button">' + m + '月</button>';
+      var dis = disabled ? ' disabled' : '';
+      return '<button class="mp-m' + on + '"' + dis + (disabled ? '' : ' data-ym="' + ym + '"') + ' type="button">' + m + '月</button>';
     }).join('');
   }
   function openMp() {
