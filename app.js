@@ -4,7 +4,7 @@
 
   var STORE_KEY = 'fcLedger.v1';
   var THEME_KEY = 'fcLedger.theme';
-  var VERSION = '2.5.0';
+  var VERSION = '2.6.0';
   var PALETTE = ['--c1','--c2','--c3','--c4','--c5','--c6','--c7','--c8','--c9'];
 
   /* ─────────────── 小工具 ─────────────── */
@@ -75,6 +75,121 @@
   var ui = { tab: 'dash', mode: 'month', ym: ymOf(todayISO()), year: todayISO().slice(0, 4),
              editingId: null, allPeriods: false };
   var pasteDraft = [];
+  var _cardFilter = null;
+
+  /* ─────────────── 卡片權益資料 ─────────────── */
+  var CARD_INFO = [
+    { name:'中信 LINE Pay JCB', last4:'6357', issuer:'中信', network:'JCB', color:'#1DB446',
+      benefits:[
+        {label:'LINE Pay 指定通路', rate:'3%', reward:'LINE Points', top:true, note:'超商/餐廳/加油站'},
+        {label:'一般消費', rate:'0.5%', reward:'LINE Points'}
+      ],
+      bestFor:['超商','行動支付','LINE Pay','餐廳','加油'],
+      note:'需透過 LINE Pay 感應；指定通路含超商、餐廳、加油站等類別'
+    },
+    { name:'中信 All Me 萬事達', last4:'4511', issuer:'中信', network:'萬事達', color:'#E85A2A',
+      benefits:[
+        {label:'每季指定通路', rate:'3%', reward:'紅利', top:true, note:'每季輪換，請查官網'},
+        {label:'一般消費', rate:'0.5%', reward:'紅利'}
+      ],
+      bestFor:['網路購物','外送','串流','超商'],
+      note:'指定通路每季更換，通常涵蓋網購/外送/串流；官網確認當季通路'
+    },
+    { name:'國泰 CUBE Visa', last4:'3624', issuer:'國泰', network:'Visa', color:'#B8960E',
+      benefits:[
+        {label:'CUBE App 自選 3 類別', rate:'3%', reward:'CUBE幣', top:true},
+        {label:'海外消費', rate:'3%', reward:'CUBE幣', top:true},
+        {label:'一般消費', rate:'1%', reward:'CUBE幣'}
+      ],
+      bestFor:['超商','餐廳','網路購物','外送','串流','海外'],
+      note:'每月透過 CUBE App 自選 3 個類別，彈性最高；海外也有 3%'
+    },
+    { name:'國泰蝦皮萬事達', last4:'2225', issuer:'國泰', network:'萬事達', color:'#EE4D2D',
+      benefits:[
+        {label:'蝦皮購物', rate:'6%', reward:'蝦幣', top:true},
+        {label:'指定行動支付', rate:'2%', reward:'蝦幣'},
+        {label:'一般消費', rate:'1%', reward:'蝦幣'}
+      ],
+      bestFor:['蝦皮','行動支付'],
+      note:'蝦幣可折抵蝦皮消費；蝦皮以外回饋較一般'
+    },
+    { name:'台新 Richart JCB', last4:'3208', issuer:'台新', network:'JCB', color:'#E8002D',
+      benefits:[
+        {label:'數位消費（串流/網購/外送）', rate:'3%', reward:'現金回饋', top:true},
+        {label:'超商', rate:'2%', reward:'現金回饋'},
+        {label:'一般消費', rate:'0.5%', reward:'現金回饋'}
+      ],
+      bestFor:['串流','網路購物','外送','超商'],
+      note:'需開立 Richart 數位帳戶；數位/訂閱消費回饋佳'
+    },
+    { name:'台新 Richart 萬事達', last4:'6209', issuer:'台新', network:'萬事達', color:'#C00023',
+      benefits:[
+        {label:'指定消費類別', rate:'最高3%', reward:'現金回饋', top:true},
+        {label:'一般消費', rate:'0.5%', reward:'現金回饋'}
+      ],
+      bestFor:['日常消費'],
+      note:'請至台新官網確認最新回饋類別與條件'
+    },
+    { name:'台新 Richart Visa', last4:'0602', issuer:'台新', network:'Visa', color:'#A00018',
+      benefits:[
+        {label:'指定消費類別', rate:'最高3%', reward:'現金回饋', top:true},
+        {label:'一般消費', rate:'0.5%', reward:'現金回饋'}
+      ],
+      bestFor:['日常消費'],
+      note:'請至台新官網確認最新回饋類別與條件'
+    },
+    { name:'新光寰宇 Visa', last4:'2007', issuer:'新光', network:'Visa', color:'#0075A9',
+      benefits:[
+        {label:'海外消費', rate:'2.8%', reward:'現金回饋', top:true},
+        {label:'國內一般消費', rate:'0.5%', reward:'現金回饋'}
+      ],
+      bestFor:['海外','出國刷卡'],
+      note:'海外現金回饋高；附旅遊平安險；免年費（達指定消費門檻）'
+    },
+    { name:'富邦 Costco 萬事達', last4:'0969', issuer:'富邦', network:'萬事達', color:'#005DAA',
+      benefits:[
+        {label:'Costco 購物', rate:'2%', reward:'現金回饋', top:true},
+        {label:'一般消費', rate:'1%', reward:'現金回饋'}
+      ],
+      bestFor:['Costco'],
+      note:'Costco 限定聯名卡；回饋以年度現金支票結算；需 Costco 會員'
+    },
+    { name:'富邦 momo 卡萬事達', last4:'6848', issuer:'富邦', network:'萬事達', color:'#FF6E01',
+      benefits:[
+        {label:'momo 購物', rate:'6%', reward:'紅利', top:true, note:'每月上限 NT$500 回饋'},
+        {label:'超商/外送/餐廳', rate:'3%', reward:'紅利'},
+        {label:'一般消費', rate:'1%', reward:'紅利'}
+      ],
+      bestFor:['momo','超商','外送','餐廳'],
+      note:'momo 回饋最高但每月上限 NT$500；超商/外送/餐廳 3%（依官網條款）'
+    },
+    { name:'聯邦 M 卡萬事達', last4:'0206', issuer:'聯邦', network:'萬事達', color:'#004A97',
+      benefits:[
+        {label:'行動支付（街口/台灣Pay/Pi）', rate:'3%', reward:'紅利', top:true},
+        {label:'一般消費', rate:'0.5%', reward:'紅利'}
+      ],
+      bestFor:['行動支付','街口','Pi錢包','台灣Pay'],
+      note:'國內非 LINE Pay 的行動支付回饋佳；不含 LINE Pay'
+    },
+    { name:'聯邦 LINE Bank Visa', last4:'1308', issuer:'聯邦', network:'Visa', color:'#00B900',
+      benefits:[
+        {label:'LINE Pay 消費', rate:'2%', reward:'LINE Points', top:true},
+        {label:'一般消費', rate:'0.5%', reward:'LINE Points'}
+      ],
+      bestFor:['LINE Pay','行動支付'],
+      note:'搭配 LINE Bank 帳戶；LINE Points 可在 LINE Pay 折抵消費'
+    },
+    { name:'聯邦幫賴點卡 Visa', last4:'9908', issuer:'聯邦', network:'Visa', color:'#1A7F37',
+      benefits:[
+        {label:'LINE Pay / 指定通路', rate:'最高3%', reward:'LINE Points', top:true},
+        {label:'超商/網購', rate:'2%', reward:'LINE Points'},
+        {label:'一般消費', rate:'0.5%', reward:'LINE Points'}
+      ],
+      bestFor:['LINE Pay','超商','網路購物','行動支付'],
+      note:'回饋 LINE Points；超商/網購有額外加碼；可在 LINE Pay 折抵'
+    }
+  ];
+  var CARD_CATS = ['超商','餐廳','網路購物','外送','串流','海外','行動支付','LINE Pay','Costco','蝦皮','momo'];
 
   function defaultBudget() { return clone(window.SEED.budget); }
 
@@ -1023,6 +1138,51 @@
     fr.readAsText(file, 'utf-8');
   }
 
+  /* ─────────────── 卡片權益 ─────────────── */
+  function renderCards() {
+    var fHtml = '<button class="cat-btn' + (!_cardFilter ? ' active' : '') + '" data-cat="">全部</button>';
+    CARD_CATS.forEach(function(c) {
+      fHtml += '<button class="cat-btn' + (_cardFilter === c ? ' active' : '') + '" data-cat="' + esc(c) + '">' + esc(c) + '</button>';
+    });
+    $('#catFilters').innerHTML = fHtml;
+    $$('#catFilters .cat-btn').forEach(function(b) {
+      b.onclick = function() { _cardFilter = b.dataset.cat || null; renderCards(); };
+    });
+
+    var sorted = CARD_INFO.slice().sort(function(a, b) {
+      if (!_cardFilter) return 0;
+      var am = a.bestFor.indexOf(_cardFilter) !== -1;
+      var bm = b.bestFor.indexOf(_cardFilter) !== -1;
+      return am === bm ? 0 : (am ? -1 : 1);
+    });
+
+    var html = '';
+    sorted.forEach(function(c) {
+      var match = !_cardFilter || c.bestFor.indexOf(_cardFilter) !== -1;
+      html += '<div class="cb-card' + (match ? '' : ' dimmed') + '">';
+      html += '<div class="cb-header" style="background:' + c.color + '">';
+      html += '<div class="cb-card-name">' + esc(c.name) + '</div>';
+      html += '<div class="cb-card-meta">*' + esc(c.last4) + '&ensp;' + esc(c.issuer) + ' · ' + esc(c.network) + '</div>';
+      html += '</div><div class="cb-body">';
+      c.benefits.forEach(function(b) {
+        html += '<div class="cb-benefit">';
+        html += '<span class="cb-rate' + (b.top ? ' top' : '') + '">' + esc(b.rate) + '</span>';
+        html += '<span class="cb-label">' + esc(b.label);
+        if (b.note) html += '<br><em style="font-size:.71rem;color:var(--muted)">' + esc(b.note) + '</em>';
+        html += '</span>';
+        html += '<span class="cb-reward">' + esc(b.reward) + '</span></div>';
+      });
+      html += '<div class="cb-tags">';
+      c.bestFor.forEach(function(t) {
+        html += '<span class="cb-tag' + (_cardFilter && t === _cardFilter ? ' active' : '') + '">' + esc(t) + '</span>';
+      });
+      html += '</div>';
+      if (c.note) html += '<p class="cb-note">' + esc(c.note) + '</p>';
+      html += '</div></div>';
+    });
+    $('#cardBenefitsGrid').innerHTML = html;
+  }
+
   /* ─────────────── 設定 ─────────────── */
   function renderSettings() {
     function tags(el, arr, onDel) {
@@ -1325,8 +1485,8 @@
     ui.tab = t;
     $$('.view').forEach(function (v) { v.hidden = v.id !== 'view-' + t; });
     $$('.tab').forEach(function (b) { b.classList.toggle('is-on', b.dataset.tab === t); });
-    $('#periodBar').style.display = (t === 'settings' || t === 'pending') ? 'none' : '';
-    $('#fab').hidden = (t === 'settings');
+    $('#periodBar').style.display = (t === 'settings' || t === 'pending' || t === 'cards') ? 'none' : '';
+    $('#fab').hidden = (t === 'settings' || t === 'cards');
     window.scrollTo(0, 0);
     renderAll();
   }
@@ -1338,6 +1498,7 @@
     else if (ui.tab === 'list') renderList();
     else if (ui.tab === 'pending') renderPending();
     else if (ui.tab === 'settings') renderSettings();
+    else if (ui.tab === 'cards') renderCards();
   }
 
   var toastTimer;
