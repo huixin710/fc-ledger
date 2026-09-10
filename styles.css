@@ -45,6 +45,22 @@
 
 *{box-sizing:border-box}
 [hidden]{display:none !important}   /* id 選擇器的 display 會蓋掉預設的 [hidden] */
+
+/* ── 密碼鎖畫面 ── */
+.lock-screen{position:fixed;inset:0;z-index:9999;background:var(--bg);display:flex;align-items:center;justify-content:center;}
+.lock-box{text-align:center;padding:2rem;max-width:300px;width:100%;}
+.lock-icon-lg{font-size:3.5rem;margin-bottom:.5rem;}
+.lock-title{font-size:1.4rem;font-weight:600;margin:0 0 1.5rem;color:var(--text);}
+#lockPin{
+  width:100%;max-width:200px;margin:0 auto;display:block;
+  padding:14px 12px;font-size:1.4rem;text-align:center;letter-spacing:8px;
+  border:2px solid var(--line);border-radius:12px;
+  background:var(--surface);color:var(--text);
+  transition:border-color .15s;
+}
+#lockPin:focus{outline:none;border-color:var(--accent);}
+.lock-err{color:var(--danger);min-height:1.4em;font-size:.85rem;margin:.75rem 0 0;}
+.lock-hint{font-size:.78rem;color:var(--muted);margin:.5rem 0 0;}
 html{-webkit-text-size-adjust:100%}
 body{
   margin:0;

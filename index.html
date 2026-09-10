@@ -16,6 +16,18 @@
 </head>
 <body>
 
+<!-- ═══════════ 密碼鎖畫面 ═══════════ -->
+<div id="lockScreen" class="lock-screen" hidden>
+  <div class="lock-box">
+    <div class="lock-icon-lg">🔒</div>
+    <h2 class="lock-title">FC 記帳本</h2>
+    <input type="password" id="lockPin" inputmode="numeric" maxlength="8"
+           placeholder="輸入密碼" autocomplete="current-password">
+    <p class="lock-err" id="lockMsg"></p>
+    <p class="lock-hint">按 Enter 確認</p>
+  </div>
+</div>
+
 <header class="topbar">
   <div class="topbar-main">
     <h1 class="brand">FC 記帳本</h1>
@@ -209,6 +221,28 @@
       <div class="inline-add">
         <input type="text" id="newCard" placeholder="新增卡別…">
         <button class="btn btn-sm" id="addCard" type="button">加入</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2 class="card-h">🔒 應用程式鎖</h2>
+      <p class="hint">設定後每次開啟 App 需要輸入密碼，防止別人看到你的消費紀錄。</p>
+      <div id="pinStatus"></div>
+      <div id="pinSetForm" hidden>
+        <label class="fld"><span>新密碼（4–8 位數字）</span>
+          <input type="password" id="pinNew" inputmode="numeric" maxlength="8" placeholder="例：1234"></label>
+        <label class="fld"><span>再輸入一次確認</span>
+          <input type="password" id="pinConfirm" inputmode="numeric" maxlength="8" placeholder="再次輸入"></label>
+        <div class="btn-row">
+          <button class="btn" id="pinSave" type="button">確認設定</button>
+          <button class="btn btn-ghost" id="pinCancel" type="button">取消</button>
+        </div>
+        <p class="hint" id="pinMsg" style="margin-top:6px"></p>
+      </div>
+      <div class="btn-row" id="pinBtns">
+        <button class="btn btn-ghost" id="pinSetBtn" type="button">設定密碼</button>
+        <button class="btn btn-danger" id="pinRemoveBtn" type="button" hidden>移除密碼</button>
+        <button class="btn" id="pinLockNow" type="button" hidden>🔒 立即鎖定</button>
       </div>
     </div>
 

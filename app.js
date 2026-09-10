@@ -197,6 +197,38 @@
     });
   }
 
+  /* ─────────────── 密碼鎖 ─────────────── */
+  var PIN_KEY = 'fcLedger.pinHash';
+
+  function getPinHash() { try { return localStorage.getItem(PIN_KEY) || ''; } catch(e) { return ''; } }
+
+  function hashPin(pin) {
+    return crypto.subtle.digest('SHA-256', new TextEncoder().encode(pin)).then(function(buf) {
+      return Array.from(new Uint8Array(buf)).map(function(b) { return b.toString(16).padStart(2,'0'); }).join('');
+    });
+  }
+
+  function lockApp() {
+    $('#lockScreen').hidden = false;
+    $('#lockPin').value = '';
+    $('#lockMsg').textContent = '';
+    setTimeout(function() { try { $('#lockPin').focus(); } catch(e) {} }, 100);
+  }
+
+  function unlockApp() {
+    $('#lockScreen').hidden = true;
+    renderAll();
+  }
+
+  function renderPinSection() {
+    var has = !!getPinHash();
+    $('#pinSetBtn').textContent = has ? '修改密碼' : '設定密碼';
+    $('#pinRemoveBtn').hidden = !has;
+    $('#pinLockNow').hidden = !has;
+    $('#pinStatus').textContent = has ? '密碼已設定 ✓' : '';
+    $('#pinStatus').style.color = has ? '#16a34a' : '';
+  }
+
   /* ─────────────── 計算 ─────────────── */
 
   /* 每個幣別用「自己歷史上實際入帳的紀錄」算出平均匯率與手續費率 */
@@ -1036,6 +1068,10 @@
     });
     $('#verLabel').textContent = 'v' + VERSION + '　·　' + db.records.length + ' 筆紀錄';
 
+    // 密碼鎖面板
+    renderPinSection();
+    $('#pinSetForm').hidden = true;
+
     // 同步面板
     var tokenEl = $('#syncToken');
     if (tokenEl) {
@@ -1408,6 +1444,48 @@
       renderAll(); toast('已加入 ' + n + ' 筆');
     };
 
+    // 密碼鎖
+    $('#lockPin').addEventListener('keydown', function(e) {
+      if (e.key !== 'Enter') return;
+      var pin = this.value.trim();
+      if (!pin) return;
+      hashPin(pin).then(function(h) {
+        if (h === getPinHash()) {
+          unlockApp();
+        } else {
+          $('#lockMsg').textContent = '密碼錯誤，請再試一次';
+          $('#lockPin').value = '';
+        }
+      });
+    });
+    $('#lockPin').addEventListener('input', function() { $('#lockMsg').textContent = ''; });
+
+    $('#pinSetBtn').onclick = function() {
+      $('#pinSetForm').hidden = false;
+      $('#pinNew').value = ''; $('#pinConfirm').value = ''; $('#pinMsg').textContent = '';
+      $('#pinNew').focus();
+    };
+    $('#pinCancel').onclick = function() { $('#pinSetForm').hidden = true; };
+    $('#pinSave').onclick = function() {
+      var p1 = $('#pinNew').value.trim(), p2 = $('#pinConfirm').value.trim();
+      if (!p1) { $('#pinMsg').textContent = '請輸入密碼'; return; }
+      if (p1.length < 4) { $('#pinMsg').textContent = '密碼至少 4 位'; return; }
+      if (p1 !== p2) { $('#pinMsg').textContent = '兩次輸入不一致'; return; }
+      hashPin(p1).then(function(h) {
+        try { localStorage.setItem(PIN_KEY, h); } catch(e) {}
+        $('#pinSetForm').hidden = true;
+        renderPinSection();
+        toast('密碼已設定');
+      });
+    };
+    $('#pinRemoveBtn').onclick = function() {
+      if (!confirm('確定移除密碼鎖？')) return;
+      try { localStorage.removeItem(PIN_KEY); } catch(e) {}
+      renderPinSection();
+      toast('密碼已移除');
+    };
+    $('#pinLockNow').onclick = lockApp;
+
     // 雲端同步
     $('#syncToken').addEventListener('change', function () {
       var v = this.value.trim();
@@ -1492,7 +1570,12 @@
 
   refreshOptions();
   bind();
-  setTab('dash');
+
+  if (getPinHash()) {
+    lockApp();   // 有密碼：先顯示鎖定畫面，unlockApp() 成功後才渲染
+  } else {
+    setTab('dash');
+  }
 
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', function () {
