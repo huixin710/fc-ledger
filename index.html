@@ -180,7 +180,10 @@
       <label class="fld"><span>GitHub Personal Access Token</span>
         <input type="password" id="syncToken" autocomplete="off" placeholder="ghp_xxxx…">
       </label>
-      <p class="hint">取得方式：<b>github.com → Settings → Developer settings → Personal access tokens → Tokens (classic)</b>，建立一個只勾 <code>gist</code> 的 token 貼上即可。</p>
+      <p class="hint">取得方式：<b>github.com → Settings → Developer settings → Personal access tokens → Tokens (classic)</b>，建立一個只勾 <code>gist</code> 的 token 貼上即可（要用 Classic，不是 Fine-grained）。</p>
+      <label class="fld"><span>Gist ID（換裝置時填上一台顯示的 ID）</span>
+        <input type="text" id="syncGistId" placeholder="第一次上傳後會自動填入" autocomplete="off">
+      </label>
       <label class="chk"><input type="checkbox" id="syncAuto"> 每次儲存自動上傳</label>
       <div class="btn-row" style="margin-top:10px">
         <button class="btn" id="syncPush" type="button">☁ 立即上傳</button>

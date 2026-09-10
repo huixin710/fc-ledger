@@ -120,8 +120,8 @@
   var GIST_AUTO_KEY = 'fcLedger.gistAuto';
   var GIST_FILE     = 'fc-ledger-data.json';
 
-  function gistToken() { try { return localStorage.getItem(GIST_TOKEN_KEY) || ''; } catch(e) { return ''; } }
-  function gistId()    { try { return localStorage.getItem(GIST_ID_KEY)    || ''; } catch(e) { return ''; } }
+  function gistToken() { try { return (localStorage.getItem(GIST_TOKEN_KEY) || '').replace(/[^\x20-\x7E]/g, '').trim(); } catch(e) { return ''; } }
+  function gistId()    { try { return (localStorage.getItem(GIST_ID_KEY)    || '').replace(/[^\x20-\x7E]/g, '').trim(); } catch(e) { return ''; } }
   function gistAuto()  { try { return localStorage.getItem(GIST_AUTO_KEY) === '1'; } catch(e) { return false; } }
 
   function setSyncStatus(msg, ok) {
@@ -1080,12 +1080,11 @@
     }
     var autoEl = $('#syncAuto');
     if (autoEl) autoEl.checked = gistAuto();
+    var gidEl = $('#syncGistId');
+    if (gidEl) { var gid = gistId(); gidEl.value = gid; gidEl.placeholder = gid ? gid : '第一次上傳後會自動填入'; }
     var statusEl = $('#syncStatus');
     if (statusEl && !statusEl.textContent) {
-      var gid = gistId();
-      statusEl.textContent = gid
-        ? 'Gist ID: ' + gid.slice(0, 8) + '… （已連結）'
-        : (gistToken() ? 'Token 已設定，點「立即上傳」初始化 Gist' : '');
+      statusEl.textContent = gistToken() ? (gistId() ? '已連結 Gist，可上傳 / 下載' : 'Token 已設定，點「立即上傳」初始化 Gist') : '';
     }
   }
 
@@ -1488,7 +1487,7 @@
 
     // 雲端同步
     $('#syncToken').addEventListener('change', function () {
-      var v = this.value.trim();
+      var v = this.value.replace(/[^\x20-\x7E]/g, '').trim();
       try {
         if (v) {
           localStorage.setItem(GIST_TOKEN_KEY, v);
@@ -1506,7 +1505,18 @@
     $('#syncAuto').addEventListener('change', function () {
       try { localStorage.setItem(GIST_AUTO_KEY, this.checked ? '1' : '0'); } catch(e) {}
     });
-    $('#syncPush').onclick = syncToGist;
+    $('#syncGistId').addEventListener('change', function () {
+      var v = this.value.replace(/[^\x20-\x7E]/g, '').trim();
+      try { if (v) localStorage.setItem(GIST_ID_KEY, v); else localStorage.removeItem(GIST_ID_KEY); } catch(e) {}
+      setSyncStatus(v ? 'Gist ID 已儲存' : 'Gist ID 已清除', !!v);
+    });
+    $('#syncPush').onclick = function() {
+      syncToGist().then(function() {
+        var gid = gistId();
+        var el = $('#syncGistId');
+        if (el && gid) el.value = gid;
+      });
+    };
     $('#syncPull').onclick = function () {
       if (!confirm('這會用雲端的資料覆蓋目前裝置上的所有資料，確定嗎？')) return;
       syncFromGist();
