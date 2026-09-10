@@ -4,7 +4,7 @@
 
   var STORE_KEY = 'fcLedger.v1';
   var THEME_KEY = 'fcLedger.theme';
-  var VERSION = '2.7.6';
+  var VERSION = '2.7.7';
   var PALETTE = ['--c1','--c2','--c3','--c4','--c5','--c6','--c7','--c8','--c9'];
 
   /* ─────────────── 小工具 ─────────────── */
@@ -1478,11 +1478,37 @@
     ui.mode = ui.mode === 'month' ? 'year' : (ui.mode === 'year' ? 'all' : 'month');
     renderAll();
   }
+
+  /* ─── 月份快速選擇器 ─── */
+  var _mpYear = null;
+  function closeMp() { $('#monthPicker').hidden = true; }
+  function renderMpGrid() {
+    $('#mpYearLbl').textContent = '民國 ' + (_mpYear - 1911) + ' 年';
+    var cur = ui.ym;
+    $('#mpGrid').innerHTML = [1,2,3,4,5,6,7,8,9,10,11,12].map(function (m) {
+      var ym = _mpYear + '-' + String(m).padStart(2, '0');
+      var on = ym === cur ? ' is-cur' : '';
+      return '<button class="mp-m' + on + '" data-ym="' + ym + '" type="button">' + m + '月</button>';
+    }).join('');
+  }
+  function openMp() {
+    _mpYear = Number(ui.ym.slice(0, 4));
+    renderMpGrid();
+    $('#monthPicker').hidden = false;
+  }
+  function onPeriodLabelClick() {
+    if (ui.mode === 'month') {
+      if ($('#monthPicker').hidden) { openMp(); } else { closeMp(); }
+    } else {
+      cyclePeriodMode();
+    }
+  }
+
   function renderPeriodBar() {
     var lbl = $('#periodLabel');
     if (ui.mode === 'all') lbl.textContent = '全部期間（點我切回月）';
     else if (ui.mode === 'year') lbl.textContent = '民國 ' + (Number(ui.year) - 1911) + ' 年　(' + ui.year + ')';
-    else lbl.textContent = '民國 ' + rocYM(ui.ym) + '　(' + ui.ym + ')';
+    else lbl.textContent = '民國 ' + rocYM(ui.ym) + '　▾';
     $('#prevPeriod').style.visibility = ui.mode === 'all' ? 'hidden' : '';
     $('#nextPeriod').style.visibility = ui.mode === 'all' ? 'hidden' : '';
   }
@@ -1533,9 +1559,22 @@
   /* ─────────────── 綁定 ─────────────── */
   function bind() {
     $$('.tab').forEach(function (b) { b.onclick = function () { setTab(b.dataset.tab); }; });
-    $('#prevPeriod').onclick = function () { shiftPeriod(-1); };
-    $('#nextPeriod').onclick = function () { shiftPeriod(1); };
-    $('#periodLabel').onclick = cyclePeriodMode;
+    $('#prevPeriod').onclick = function () { closeMp(); shiftPeriod(-1); };
+    $('#nextPeriod').onclick = function () { closeMp(); shiftPeriod(1); };
+    $('#periodLabel').onclick = onPeriodLabelClick;
+    $('#mpPrev').onclick = function () { _mpYear--; renderMpGrid(); };
+    $('#mpNext').onclick = function () { _mpYear++; renderMpGrid(); };
+    $('#mpGrid').onclick = function (e) {
+      var btn = e.target.closest('[data-ym]');
+      if (!btn) return;
+      ui.ym = btn.dataset.ym;
+      ui.mode = 'month';
+      closeMp();
+      renderAll();
+    };
+    document.addEventListener('click', function (e) {
+      if (!$('#monthPicker').hidden && !$('#periodBar').contains(e.target)) closeMp();
+    }, true);
 
     $('#fab').onclick = function () { openSheet(null); };
     $('#sheetCancel').onclick = closeSheet;

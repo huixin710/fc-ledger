@@ -12,7 +12,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="FC 記帳本">
-<link rel="stylesheet" href="styles.css?v=2.7.6">
+<link rel="stylesheet" href="styles.css?v=2.7.7">
 </head>
 <body>
 
@@ -37,6 +37,14 @@
     <button class="per-nav" id="prevPeriod" type="button" aria-label="上一期">‹</button>
     <button class="per-label" id="periodLabel" type="button">載入中…</button>
     <button class="per-nav" id="nextPeriod" type="button" aria-label="下一期">›</button>
+    <div id="monthPicker" class="month-picker" hidden>
+      <div class="mp-year">
+        <button class="mp-yn" id="mpPrev" type="button">‹</button>
+        <span id="mpYearLbl"></span>
+        <button class="mp-yn" id="mpNext" type="button">›</button>
+      </div>
+      <div class="mp-grid" id="mpGrid"></div>
+    </div>
   </nav>
 </header>
 
@@ -409,7 +417,7 @@
 
 <div class="toast" id="toast" hidden></div>
 
-<script src="seed.js?v=2.7.6"></script>
-<script src="app.js?v=2.7.6"></script>
+<script src="seed.js?v=2.7.7"></script>
+<script src="app.js?v=2.7.7"></script>
 </body>
 </html>
