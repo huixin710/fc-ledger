@@ -4,7 +4,7 @@
 
   var STORE_KEY = 'fcLedger.v1';
   var THEME_KEY = 'fcLedger.theme';
-  var VERSION = '2.7.3';
+  var VERSION = '2.7.4';
   var PALETTE = ['--c1','--c2','--c3','--c4','--c5','--c6','--c7','--c8','--c9'];
 
   /* ─────────────── 小工具 ─────────────── */
@@ -38,15 +38,16 @@
     return (Number(p[0]) - 1911) + '/' + p[1] + '/' + p[2];
   }
   // 接受 2026-04-06、2026/4/6、115/04/06、1150406、8/6、2026.04.06
-  function toISO(raw) {
+  function toISO(raw, fallbackRocYear) {
     if (!raw) return '';
     var s = toHalf(raw).trim().replace(/[.年月]/g, '/').replace(/日/g, '');
     var m = s.match(/^(\d{3})(\d{2})(\d{2})$/);          // 1150406
     if (!m) m = s.match(/^(\d{1,4})[\/-](\d{1,2})[\/-](\d{1,2})$/);
     if (!m) {
-      var mm = s.match(/^(\d{1,2})[\/-](\d{1,2})$/);      // 08/06 → 當年（民國 115）
+      var mm = s.match(/^(\d{1,2})[\/-](\d{1,2})$/);      // 08/06 → 使用 fallbackRocYear 或當年
       if (!mm) return '';
-      m = [null, String(new Date().getFullYear() - 1911), mm[1], mm[2]];
+      var fy = fallbackRocYear != null ? fallbackRocYear : (new Date().getFullYear() - 1911);
+      m = [null, String(fy), mm[1], mm[2]];
     }
     var y = Number(m[1]);
     if (y < 1911) y += 1911;
@@ -907,6 +908,7 @@
     var D = '(\\d{7}|\\d{1,4}[\\/-]\\d{1,2}[\\/-]\\d{1,2}|\\d{1,2}[\\/-]\\d{1,2})';
     var re = new RegExp('^\\s*' + D + '(?:\\s+' + D + ')?\\s+(.+?)$');
     var union = opts.format === 'union';
+    var rocYear = opts.year != null && opts.year !== '' ? Number(opts.year) : null;
 
     lines.forEach(function (raw) {
       var line = raw.replace(/\t/g, '  ').trim();
@@ -935,7 +937,7 @@
 
       if (FEE_RE.test(desc) && out.length) { out[out.length - 1].fee += amount; return; }
 
-      var d1 = toISO(m[1]), d2 = m[2] ? toISO(m[2]) : '';
+      var d1 = toISO(m[1], rocYear), d2 = m[2] ? toISO(m[2], rocYear) : '';
       if (union && d2) { var t = d1; d1 = d2; d2 = t; }
       out.push({ id: uid(), date: d1, postDate: d2, item: desc, twd: amount, fee: 0,
                  currency: '', amount: 0, card: opts.card, category: opts.category,
@@ -965,12 +967,16 @@
     }
     if (/聯邦/.test(text)) result.format = 'union';
     else if (/台新|國泰|新光|富邦|中信|中國信託/.test(text)) result.format = 'std';
+    // 從帳單文字偵測民國年份（如 「114年」、「114/」開頭的日期）
+    var ym = text.match(/(?:民國\s*)?(\d{3})\s*年/) || text.match(/\b(1[01]\d)[\/-]\d{1,2}[\/-]\d{1,2}/);
+    if (ym) result.year = String(ym[1]);
     return result;
   }
 
   function renderPastePreview() {
     var res = parseStatement($('#pasteBox').value, {
-      card: $('#pasteCard').value, category: $('#pasteCat').value, format: $('#pasteFormat').value
+      card: $('#pasteCard').value, category: $('#pasteCat').value,
+      format: $('#pasteFormat').value, year: $('#pasteYear').value || null
     });
     pasteDraft = res.rows;
     $('#pasteCommit').disabled = !res.rows.length;
@@ -1553,6 +1559,7 @@
       var hints = [];
       if (d.card) { $('#pasteCard').value = d.card; hints.push('卡片：' + d.card); }
       if (d.format) { $('#pasteFormat').value = d.format; hints.push('格式：' + (d.format === 'union' ? '聯邦' : '一般')); }
+      if (d.year) { $('#pasteYear').value = d.year; hints.push('年份：民國' + d.year + '年'); }
       $('#pasteDetect').textContent = hints.length ? '🔍 自動偵測 → ' + hints.join('　') : '';
     });
     $('#pasteCommit').onclick = function () {

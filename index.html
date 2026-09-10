@@ -12,7 +12,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="FC 記帳本">
-<link rel="stylesheet" href="styles.css?v=2.7.3">
+<link rel="stylesheet" href="styles.css?v=2.7.4">
 </head>
 <body>
 
@@ -160,12 +160,25 @@
         <label class="fld"><span>這批要記到哪張卡</span><select id="pasteCard"></select></label>
         <label class="fld"><span>預設分類</span><select id="pasteCat"></select></label>
       </div>
-      <label class="fld"><span>帳單格式</span>
-        <select id="pasteFormat">
+      <div class="fld-2">
+        <label class="fld"><span>帳單年份（民國）</span>
+          <select id="pasteYear">
+            <option value="">自動偵測</option>
+            <option value="115">115 年（2026）</option>
+            <option value="114">114 年（2025）</option>
+            <option value="113">113 年（2024）</option>
+            <option value="112">112 年（2023）</option>
+            <option value="111">111 年（2022）</option>
+            <option value="110">110 年（2021）</option>
+          </select>
+        </label>
+        <label class="fld"><span>帳單格式</span>
+          <select id="pasteFormat">
           <option value="std">一般：消費日在前、台幣金額緊接在店名後（台新、國泰、寰宇…）</option>
           <option value="union">聯邦：入帳日印在消費日前面、台幣金額在整行最後</option>
-        </select>
-      </label>
+          </select>
+        </label>
+      </div>
       <p id="pasteDetect" class="paste-detect"></p>
       <textarea id="pasteBox" class="paste-box" rows="6" placeholder="115/08/10&#9;115/08/11&#9;SP NATORIUM STOREMINATO&#9;2,093&#10;08/22&#9;08/26&#9;統一時代百貨台北店&#9;3,490"></textarea>
       <div class="btn-row">
@@ -396,7 +409,7 @@
 
 <div class="toast" id="toast" hidden></div>
 
-<script src="seed.js?v=2.7.3"></script>
-<script src="app.js?v=2.7.3"></script>
+<script src="seed.js?v=2.7.4"></script>
+<script src="app.js?v=2.7.4"></script>
 </body>
 </html>
